@@ -7,10 +7,10 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ProductController;
     
 
-Route::view('/', 'welcome');
+Route::view('/welcomme', 'welcome');
 
 // Dashboard
-Route::get('/dashboard', [SaleController::class, 'dashboard'])
+Route::get('/', [SaleController::class, 'dashboard'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
