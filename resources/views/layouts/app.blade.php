@@ -33,6 +33,28 @@
 
         <!-- Page Content -->
         <main>
+            <!-- Messages flash -->
+            @foreach (['success', 'error', 'warning', 'info'] as $msg)
+                @if(session($msg))
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                        <div class="rounded-md px-4 py-3 mb-4
+                            {{ $msg === 'success' ? 'bg-green-100 border border-green-400 text-green-700' : '' }}
+                            {{ $msg === 'error' ? 'bg-red-100 border border-red-400 text-red-700' : '' }}
+                            {{ $msg === 'warning' ? 'bg-yellow-100 border border-yellow-400 text-yellow-700' : '' }}
+                            {{ $msg === 'info' ? 'bg-blue-100 border border-blue-400 text-blue-700' : '' }}"
+                            role="alert">
+                            {{ session($msg) }}
+                            <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                                <svg class="fill-current h-6 w-6 text-current" role="button" onclick="this.parentElement.parentElement.remove()" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <title>Close</title>
+                                    <path d="M14.348 5.652a1 1 0 0 0-1.414 0L10 8.586 7.066 5.652a1 1 0 1 0-1.414 1.414L8.586 10l-2.934 2.934a1 1 0 1 0 1.414 1.414L10 11.414l2.934 2.934a1 1 0 0 0 1.414-1.414L11.414 10l2.934-2.934a1 1 0 0 0 0-1.414z"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                @endif
+            @endforeach
+
             @yield('content')
         </main>
     </div>
