@@ -103,3 +103,13 @@ Route::get('/products/{product}/details', [ProductController::class, 'publicShow
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
 });
+
+// Gestion des employés (accessible uniquement aux admins)
+Route::middleware(['auth', 'admin'])->prefix('users')->group(function () {
+    Route::get('/', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+    Route::get('/create', [\App\Http\Controllers\UserController::class, 'create'])->name('users.create');
+    Route::post('/', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store');
+    Route::get('/{user}/edit', [\App\Http\Controllers\UserController::class, 'edit'])->name('users.edit');
+    Route::put('/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update');
+    Route::delete('/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy');
+});
