@@ -31,4 +31,12 @@ class SupplierController extends Controller
         return redirect()->route('suppliers.index')
                          ->with('success', 'Fournisseur ajouté avec succès ✅');
     }
+    public function show(Supplier $supplier)
+    {
+        return view('suppliers.show', compact('supplier'));
+    }
+    public function edit(Supplier $supplier)
+    {
+        return view('suppliers.edit', compact('supplier'));
+    }
 }
