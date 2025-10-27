@@ -87,5 +87,12 @@ class SaleController extends Controller
             'totals'
         ));
     }
+    
+    public function show($saleId)
+    {
+        $sale = Sale::findOrFail($saleId); // récupère la vente
+        return view('sales.show', compact('sale'));
+    }
+
 
 }
