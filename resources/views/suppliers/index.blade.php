@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Clients')
+@section('title', 'Fournisseurs')
 
 @section('content')
 <div class="container mt-4">
-    <h2>👥 Liste des clients</h2>
-    <a href="{{ route('clients.create') }}" class="btn btn-primary mb-3">➕ Nouveau client</a>
+    <h2>📦 Liste des fournisseurs</h2>
+    <a href="{{ route('suppliers.create') }}" class="btn btn-primary mb-3">➕ Nouveau fournisseur</a>
 
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
@@ -16,28 +16,28 @@
             <tr>
                 <th>ID</th>
                 <th>Nom</th>
-                <th>Email</th>
+                <th>Contact</th>
                 <th>Téléphone</th>
                 <th>Date</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($clients as $client)
+            @forelse($suppliers as $supplier)
                 <tr>
-                    <td>{{ $client->id }}</td>
-                    <td>{{ $client->name }}</td>
-                    <td>{{ $client->email }}</td>
-                    <td>{{ $client->phone }}</td>
-                    <td>{{ $client->created_at->format('d/m/Y H:i') }}</td>
+                    <td>{{ $supplier->id }}</td>
+                    <td>{{ $supplier->name }}</td>
+                    <td>{{ $supplier->contact }}</td>
+                    <td>{{ $supplier->phone }}</td>
+                    <td>{{ $supplier->created_at->format('d/m/Y H:i') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="text-center">Aucun client trouvé</td>
+                    <td colspan="5" class="text-center">Aucun fournisseur trouvé</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
-    {{ $clients->links() }}
+    {{ $suppliers->links() }}
 </div>
 @endsection

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Ajouter Client')
+@section('title', 'Modifier Client')
 
 @section('content')
 <div class="container mx-auto py-8 px-4">
@@ -11,21 +11,22 @@
                 <i class="fas fa-arrow-left mr-2"></i>
                 Retour à la liste des clients
             </a>
-            <h1 class="text-3xl font-bold text-gray-800">Ajouter un nouveau client</h1>
-            <p class="text-gray-600 mt-2">Renseignez les informations du nouveau client</p>
+            <h1 class="text-3xl font-bold text-gray-800">Modifier le client</h1>
+            <p class="text-gray-600 mt-2">Mettez à jour les informations de {{ $client->name }}</p>
         </div>
 
         <!-- Carte du formulaire -->
         <div class="glass-card rounded-xl shadow-lg overflow-hidden">
             <div class="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
                 <h2 class="text-xl font-semibold text-gray-800 flex items-center">
-                    <i class="fas fa-user-plus mr-2 text-purple-500"></i>
+                    <i class="fas fa-user-edit mr-2 text-purple-500"></i>
                     Informations du client
                 </h2>
             </div>
 
-            <form method="POST" action="{{ route('clients.store') }}" class="p-6 space-y-6">
+            <form method="POST" action="{{ route('clients.update', $client->id) }}" class="p-6 space-y-6">
                 @csrf
+                @method('PUT')
 
                 <!-- Nom -->
                 <div>
@@ -39,7 +40,7 @@
                         <input type="text" 
                                id="name" 
                                name="name" 
-                               value="{{ old('name') }}" 
+                               value="{{ old('name', $client->name) }}" 
                                required
                                class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200 @error('name') border-red-500 @enderror"
                                placeholder="Entrez le nom complet du client">
@@ -64,7 +65,7 @@
                         <input type="email" 
                                id="email" 
                                name="email" 
-                               value="{{ old('email') }}" 
+                               value="{{ old('email', $client->email) }}" 
                                class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200 @error('email') border-red-500 @enderror"
                                placeholder="email@exemple.com">
                     </div>
@@ -88,7 +89,7 @@
                         <input type="text" 
                                id="phone" 
                                name="phone" 
-                               value="{{ old('phone') }}" 
+                               value="{{ old('phone', $client->phone) }}" 
                                class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200 @error('phone') border-red-500 @enderror"
                                placeholder="+33 1 23 45 67 89">
                     </div>
@@ -121,7 +122,7 @@
                     </a>
                     <button type="submit" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg shadow hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center order-1 sm:order-2">
                         <i class="fas fa-save mr-2"></i>
-                        Enregistrer le client
+                        Mettre à jour
                     </button>
                 </div>
             </form>
@@ -136,15 +137,15 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
                     <p class="text-gray-600">Nom</p>
-                    <p id="preview-name" class="font-medium text-gray-800">-</p>
+                    <p id="preview-name" class="font-medium text-gray-800">{{ $client->name }}</p>
                 </div>
                 <div>
                     <p class="text-gray-600">Email</p>
-                    <p id="preview-email" class="font-medium text-gray-800">-</p>
+                    <p id="preview-email" class="font-medium text-gray-800">{{ $client->email ?? '-' }}</p>
                 </div>
                 <div>
                     <p class="text-gray-600">Téléphone</p>
-                    <p id="preview-phone" class="font-medium text-gray-800">-</p>
+                    <p id="preview-phone" class="font-medium text-gray-800">{{ $client->phone ?? '-' }}</p>
                 </div>
             </div>
         </div>
