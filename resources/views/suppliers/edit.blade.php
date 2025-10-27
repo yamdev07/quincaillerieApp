@@ -7,11 +7,8 @@
     <div class="max-w-2xl mx-auto">
         <!-- En-tête -->
         <div class="mb-8">
-            <button
-                onclick="window.location='{{ route('suppliers.index') }}'"
-                class="inline-flex items-center px-4 py-2 bg-orange-600 text-white
-                font-semibold rounded hover:bg-orange-800 mb-4"
-            >
+            <button onclick="window.location='{{ route('suppliers.index') }}'" class="inline-flex items-center px-4 py-2 bg-orange-600 text-white
+                font-semibold rounded hover:bg-orange-800 mb-4">
                 Retour a la liste
             </button>
             <h1 class="text-3xl font-bold text-gray-800">Ajouter un nouveau fournisseur</h1>
