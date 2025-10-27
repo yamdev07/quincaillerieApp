@@ -20,7 +20,7 @@ class AdminMiddleware
 
         // Vérifie si l'utilisateur est admin
         // Ici, on suppose que tu as un champ 'is_admin' dans ta table users
-        if (Auth::user()->is_admin != 1) {
+        if (Auth::user()->role !== 'admin') {
             abort(403, 'Accès refusé');
         }
 

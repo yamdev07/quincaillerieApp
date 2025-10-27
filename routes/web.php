@@ -110,12 +110,12 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function 
 
     // Gestion des utilisateurs
     Route::prefix('users')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('admin.users.index');
-        Route::get('/create', [UserController::class, 'create'])->name('admin.users.create');
-        Route::post('/', [UserController::class, 'store'])->name('admin.users.store');
-        Route::get('/{user}/edit', [UserController::class, 'edit'])->name('admin.users.edit');
-        Route::put('/{user}', [UserController::class, 'update'])->name('admin.users.update');
-        Route::delete('/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+        Route::get('/', [UserController::class, 'index'])->name('users.index');
+        Route::get('/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/', [UserController::class, 'store'])->name('users.store');
+        Route::get('/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+        Route::put('/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
 });

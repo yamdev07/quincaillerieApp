@@ -454,7 +454,7 @@
 
             <!-- Bouton Gestion des employés (visible seulement pour admin) -->
             @if(in_array(strtolower(auth()->user()->role), ['admin', 'super admin']))
-                <a href="{{ route('admin.users.index') }}" class="btn" style="margin-left: 10px;">
+                <a href="{{ route('users.index') }}" class="btn" style="margin-left: 10px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M3 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H3zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
                     </svg>
