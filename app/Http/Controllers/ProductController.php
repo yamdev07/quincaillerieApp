@@ -10,21 +10,18 @@ class ProductController extends Controller
 {
     public function index()
     {
-        // On récupère les produits paginés
         $products = Product::latest()->paginate(10);
 
-        // Calcul global des totaux sur tous les produits
         $totalStock = Product::sum('stock');
         $totalValue = Product::sum(DB::raw('price * stock'));
 
-        // Envoi à la vue
-        return view('products.index', compact('products', 'totalStock', 'totalValue'));
+        // Produits en alerte si stock ≤ 5
+        $lowStockProducts = Product::where('stock', '<=', 5)->get();
+
+        return view('products.index', compact('products', 'totalStock', 'totalValue', 'lowStockProducts'));
     }
 
-    public function create()
-    {
-        return view('products.create');
-    }
+    public function create() { return view('products.create'); }
 
     public function store(Request $request)
     {
@@ -37,19 +34,12 @@ class ProductController extends Controller
 
         Product::create($request->all());
 
-        return redirect()->route('products.index')
-                         ->with('success', 'Produit ajouté avec succès ✅');
+        return redirect()->route('products.index')->with('success', 'Produit ajouté avec succès ✅');
     }
 
-    public function show(Product $product)
-    {
-        return view('products.show', compact('product'));
-    }
+    public function show(Product $product) { return view('products.show', compact('product')); }
 
-    public function edit(Product $product)
-    {
-        return view('products.edit', compact('product'));
-    }
+    public function edit(Product $product) { return view('products.edit', compact('product')); }
 
     public function update(Request $request, Product $product)
     {
@@ -60,36 +50,13 @@ class ProductController extends Controller
             'description' => 'nullable|string|max:1000',
         ]);
 
-        // Mise à jour explicite
-        $product->name = $request->name;
-        $product->price = $request->price;
-        $product->stock = $request->stock; // ← ici le stock est bien mis à jour
-        $product->description = $request->description;
-        $product->save();
-
-        return redirect()->route('products.index')
-                        ->with('success', 'Produit mis à jour avec succès ✅');
-    }
-
-        public function sell(Request $request, Product $product)
-    {
-        $request->validate([
-            'quantity' => 'required|integer|min:1',
+        $product->update([
+            'name' => $request->name,
+            'price' => $request->price,
+            'stock' => $request->stock,
+            'description' => $request->description,
         ]);
 
-        $quantityRequested = $request->quantity;
-
-        // Vérifie le stock disponible
-        if ($product->stock >= $quantityRequested) {
-            // Décrémente le stock
-            $product->stock -= $quantityRequested;
-            $product->save();
-
-            return redirect()->back()->with('success', 'Vente enregistrée ✅ Stock mis à jour.');
-        } else {
-            return redirect()->back()->with('error', 'Stock insuffisant ❌ Quantité disponible : ' . $product->stock);
-        }
+        return redirect()->route('products.index')->with('success', 'Produit mis à jour avec succès ✅');
     }
-
-
 }

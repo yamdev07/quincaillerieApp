@@ -120,3 +120,8 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function 
 
 });
 
+use App\Http\Controllers\DashboardController;
+
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->name('dashboard')
+    ->middleware('auth'); // si tu veux protéger l'accès
