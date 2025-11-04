@@ -10,10 +10,13 @@
             <h1 class="text-3xl font-bold text-gray-800">Gestion des clients</h1>
             <p class="text-gray-600 mt-2">Consultez et gérez votre base de clients</p>
         </div>
-        <a href="{{ route('clients.create') }}" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-5 py-3 rounded-lg shadow-md hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 flex items-center">
-            <i class="fas fa-user-plus mr-2"></i>
-            Nouveau client
-        </a>
+
+        @if(Auth::user() && Auth::user()->role === 'admin')
+            <a href="{{ route('clients.create') }}" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-5 py-3 rounded-lg shadow-md hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 flex items-center">
+                <i class="fas fa-user-plus mr-2"></i>
+                Nouveau client
+            </a>
+        @endif
     </div>
 
     <!-- Alerts Section -->
@@ -122,20 +125,22 @@
                                 <div class="text-xs text-gray-500">{{ $client->created_at->format('H:i') }}</div>
                             </td>
                             <td class="py-4 px-6 whitespace-nowrap text-center">
-                                <div class="flex justify-center space-x-2">
-                                    <a href="{{ route('clients.edit', $client->id) }}" class="bg-blue-100 text-blue-600 hover:bg-blue-200 px-3 py-2 rounded-lg transition-colors duration-200 flex items-center">
-                                        <i class="fas fa-edit mr-1 text-sm"></i>
-                                        <span class="text-sm">Éditer</span>
-                                    </a>
-                                    <form action="{{ route('clients.destroy', $client->id) }}" method="POST" onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce client ?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="bg-red-100 text-red-600 hover:bg-red-200 px-3 py-2 rounded-lg transition-colors duration-200 flex items-center">
-                                            <i class="fas fa-trash-alt mr-1 text-sm"></i>
-                                            <span class="text-sm">Supprimer</span>
-                                        </button>
-                                    </form>
-                                </div>
+                                @if(Auth::user() && Auth::user()->role === 'admin')
+                                    <div class="flex justify-center space-x-2">
+                                        <a href="{{ route('clients.edit', $client->id) }}" class="bg-blue-100 text-blue-600 hover:bg-blue-200 px-3 py-2 rounded-lg transition-colors duration-200 flex items-center">
+                                            <i class="fas fa-edit mr-1 text-sm"></i>
+                                            <span class="text-sm">Éditer</span>
+                                        </a>
+                                        <form action="{{ route('clients.destroy', $client->id) }}" method="POST" onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce client ?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="bg-red-100 text-red-600 hover:bg-red-200 px-3 py-2 rounded-lg transition-colors duration-200 flex items-center">
+                                                <i class="fas fa-trash-alt mr-1 text-sm"></i>
+                                                <span class="text-sm">Supprimer</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -145,9 +150,11 @@
                                     <i class="fas fa-user-friends text-gray-300 text-4xl mb-3"></i>
                                     <h3 class="text-lg font-medium text-gray-700">Aucun client trouvé</h3>
                                     <p class="text-gray-500 mt-1">Commencez par ajouter votre premier client</p>
-                                    <a href="{{ route('clients.create') }}" class="mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300">
-                                        Ajouter un client
-                                    </a>
+                                    @if(Auth::user() && Auth::user()->role === 'admin')
+                                        <a href="{{ route('clients.create') }}" class="mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300">
+                                            Ajouter un client
+                                        </a>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -155,7 +162,7 @@
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Pagination -->
         @if($clients->hasPages())
         <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
