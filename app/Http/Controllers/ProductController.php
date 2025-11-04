@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
+    // 🧱 Liste des produits
     public function index()
     {
         $products = Product::latest()->paginate(10);
@@ -21,8 +22,13 @@ class ProductController extends Controller
         return view('products.index', compact('products', 'totalStock', 'totalValue', 'lowStockProducts'));
     }
 
-    public function create() { return view('products.create'); }
+    // 🆕 Page d’ajout
+    public function create()
+    {
+        return view('products.create');
+    }
 
+    // 💾 Enregistrement d’un nouveau produit
     public function store(Request $request)
     {
         $request->validate([
@@ -32,31 +38,36 @@ class ProductController extends Controller
             'description' => 'nullable|string|max:1000',
         ]);
 
-        Product::create($request->all());
+        Product::create($request->only(['name', 'stock', 'price', 'description']));
 
         return redirect()->route('products.index')->with('success', 'Produit ajouté avec succès ✅');
     }
 
-    public function show(Product $product) { return view('products.show', compact('product')); }
-
-    public function edit(Product $product) { return view('products.edit', compact('product')); }
-
-    public function update(Request $request, Product $product)
+    // 👁️ Détails d’un produit
+    public function show(Product $product)
     {
-        $request->validate([
-            'name'  => 'required|string|max:255',
-            'stock' => 'required|integer|min:0',
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string|max:1000',
-        ]);
-
-        $product->update([
-            'name' => $request->name,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'description' => $request->description,
-        ]);
-
-        return redirect()->route('products.index')->with('success', 'Produit mis à jour avec succès ✅');
+        return view('products.show', compact('product'));
     }
+
+    // ✏️ Page d’édition
+    public function edit(Product $product)
+    {
+        return view('products.edit', compact('product'));
+    }
+
+        public function update(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric',
+            'stock' => 'required|integer|min:0',
+            'description' => 'nullable|string',
+        ]);
+
+        $product->update($validated);
+
+        return redirect()->route('products.index')->with('success', 'Produit mis à jour avec succès.');
+    }
+
+
 }

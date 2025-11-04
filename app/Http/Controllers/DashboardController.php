@@ -19,18 +19,18 @@ class DashboardController extends Controller
         // 1️⃣ Ventes aujourd'hui
         $salesToday = Sale::whereDate('created_at', $today)->count();
 
-        // 2️⃣ Chiffre d'affaires total
+        // 2️⃣ Chiffre d'affaires total (aujourd'hui)
         $totalRevenue = Sale::whereDate('created_at', $today)->sum('total_price');
 
-        // 3️⃣ Alertes Stock
+        // 3️⃣ Alertes Stock (basé sur la quantité)
         $lowStockThreshold = 5;      // Produits à surveiller
         $criticalStockThreshold = 2; // Stock critique
 
-        $lowStockProducts = Product::where('stock', '<=', $lowStockThreshold)
-                                   ->where('stock', '>', $criticalStockThreshold)
+        $lowStockProducts = Product::where('quantity', '<=', $lowStockThreshold)
+                                   ->where('quantity', '>', $criticalStockThreshold)
                                    ->get();
 
-        $criticalStockProducts = Product::where('stock', '<=', $criticalStockThreshold)->get();
+        $criticalStockProducts = Product::where('quantity', '<=', $criticalStockThreshold)->get();
 
         // 4️⃣ Clients actifs (ce mois-ci)
         $activeClients = Client::whereMonth('created_at', $today->month)->count();
@@ -55,9 +55,10 @@ class DashboardController extends Controller
         }
 
         // 8️⃣ Alerte ventes si en dessous du seuil
-        $dailyTarget = 5; // Exemple : objectif minimum de ventes par jour
+        $dailyTarget = 5; // Objectif minimum de ventes par jour
         $lowSalesAlert = $salesToday < $dailyTarget;
 
+        // 🔙 Retourne la vue du tableau de bord
         return view('dashboard.index', compact(
             'salesToday',
             'totalRevenue',
