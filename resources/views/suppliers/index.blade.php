@@ -10,10 +10,13 @@
             <h1 class="text-3xl font-bold text-gray-800">Gestion des fournisseurs</h1>
             <p class="text-gray-600 mt-2">Consultez et gérez vos partenaires fournisseurs</p>
         </div>
-        <a href="{{ route('suppliers.create') }}" class="bg-gradient-to-r from-orange-600 to-amber-600 text-white px-5 py-3 rounded-lg shadow-md hover:from-orange-700 hover:to-amber-700 transition-all duration-300 flex items-center">
-            <i class="fas fa-truck-loading mr-2"></i>
-            Nouveau fournisseur
-        </a>
+
+        @if(Auth::user() && Auth::user()->role === 'admin')
+            <a href="{{ route('suppliers.create') }}" class="bg-gradient-to-r from-orange-600 to-amber-600 text-white px-5 py-3 rounded-lg shadow-md hover:from-orange-700 hover:to-amber-700 transition-all duration-300 flex items-center">
+                <i class="fas fa-truck-loading mr-2"></i>
+                Nouveau fournisseur
+            </a>
+        @endif
     </div>
 
     <!-- Alerts Section -->
@@ -122,20 +125,22 @@
                                 <div class="text-xs text-gray-500">{{ $supplier->created_at->format('H:i') }}</div>
                             </td>
                             <td class="py-4 px-6 whitespace-nowrap text-center">
-                                <div class="flex justify-center space-x-2">
-                                    <a href="{{ route('suppliers.edit', $supplier->id) }}" class="bg-blue-100 text-blue-600 hover:bg-blue-200 px-3 py-2 rounded-lg transition-colors duration-200 flex items-center">
-                                        <i class="fas fa-edit mr-1 text-sm"></i>
-                                        <span class="text-sm">Éditer</span>
-                                    </a>
-                                    <form action="{{ route('suppliers.destroy', $supplier->id) }}" method="POST" onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce fournisseur ?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="bg-red-100 text-red-600 hover:bg-red-200 px-3 py-2 rounded-lg transition-colors duration-200 flex items-center">
-                                            <i class="fas fa-trash-alt mr-1 text-sm"></i>
-                                            <span class="text-sm">Supprimer</span>
-                                        </button>
-                                    </form>
-                                </div>
+                                @if(Auth::user() && Auth::user()->role === 'admin')
+                                    <div class="flex justify-center space-x-2">
+                                        <a href="{{ route('suppliers.edit', $supplier->id) }}" class="bg-blue-100 text-blue-600 hover:bg-blue-200 px-3 py-2 rounded-lg transition-colors duration-200 flex items-center">
+                                            <i class="fas fa-edit mr-1 text-sm"></i>
+                                            <span class="text-sm">Éditer</span>
+                                        </a>
+                                        <form action="{{ route('suppliers.destroy', $supplier->id) }}" method="POST" onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce fournisseur ?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="bg-red-100 text-red-600 hover:bg-red-200 px-3 py-2 rounded-lg transition-colors duration-200 flex items-center">
+                                                <i class="fas fa-trash-alt mr-1 text-sm"></i>
+                                                <span class="text-sm">Supprimer</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -145,9 +150,11 @@
                                     <i class="fas fa-truck text-gray-300 text-4xl mb-3"></i>
                                     <h3 class="text-lg font-medium text-gray-700">Aucun fournisseur trouvé</h3>
                                     <p class="text-gray-500 mt-1">Commencez par ajouter votre premier fournisseur</p>
-                                    <a href="{{ route('suppliers.create') }}" class="mt-4 bg-gradient-to-r from-orange-600 to-amber-600 text-white px-4 py-2 rounded-lg hover:from-orange-700 hover:to-amber-700 transition-all duration-300">
-                                        Ajouter un fournisseur
-                                    </a>
+                                    @if(Auth::user() && Auth::user()->role === 'admin')
+                                        <a href="{{ route('suppliers.create') }}" class="mt-4 bg-gradient-to-r from-orange-600 to-amber-600 text-white px-4 py-2 rounded-lg hover:from-orange-700 hover:to-amber-700 transition-all duration-300">
+                                            Ajouter un fournisseur
+                                        </a>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -155,7 +162,7 @@
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Pagination -->
         @if($suppliers->hasPages())
         <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
@@ -164,19 +171,4 @@
         @endif
     </div>
 </div>
-
-@push('styles')
-<style>
-    .glass-card {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .table-row-hover:hover {
-        background-color: #f8fafc;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-</style>
-@endpush
 @endsection
