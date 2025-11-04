@@ -20,15 +20,21 @@
                     </div>
                 </div>
                 <div class="flex gap-3">
-                    <a href="{{ route('products.edit', $product->id) }}" class="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-800 font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
-                        <i class="bi bi-pencil-square text-lg group-hover:rotate-12 transition-transform duration-300"></i>
-                        <span>Modifier</span>
-                    </a>
-                    <a href="{{ route('products.index') }}" class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
+                    @if(Auth::user() && Auth::user()->role === 'admin')
+                        <a href="{{ route('products.edit', $product->id) }}" 
+                        class="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-800 font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
+                            <i class="bi bi-pencil-square text-lg group-hover:rotate-12 transition-transform duration-300"></i>
+                            <span>Modifier</span>
+                        </a>
+                    @endif
+
+                    <a href="{{ route('products.index') }}" 
+                    class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
                         <i class="bi bi-arrow-left-circle text-lg group-hover:-translate-x-1 transition-transform duration-300"></i>
                         <span>Retour</span>
                     </a>
                 </div>
+
             </div>
         </div>
 
@@ -156,20 +162,27 @@
                             <i class="bi bi-lightning-charge text-purple-500"></i>
                             Actions rapides
                         </h3>
-                        <div class="space-y-3">
-                            <a href="{{ route('products.edit', $product->id) }}" class="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-800 font-semibold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
-                                <i class="bi bi-pencil-square group-hover:rotate-12 transition-transform duration-300"></i>
-                                <span>Modifier le produit</span>
-                            </a>
-                            <form action="{{ route('products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.')" class="w-full">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
-                                    <i class="bi bi-trash group-hover:scale-110 transition-transform duration-300"></i>
-                                    <span>Supprimer le produit</span>
-                                </button>
-                            </form>
-                        </div>
+                       @if(Auth::user() && Auth::user()->role === 'admin')
+                            <div class="space-y-3">
+                                <a href="{{ route('products.edit', $product->id) }}" 
+                                class="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-800 font-semibold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
+                                    <i class="bi bi-pencil-square group-hover:rotate-12 transition-transform duration-300"></i>
+                                    <span>Modifier le produit</span>
+                                </a>
+
+                                <form action="{{ route('products.destroy', $product->id) }}" method="POST"
+                                    onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.')" class="w-full">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" 
+                                            class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
+                                        <i class="bi bi-trash group-hover:scale-110 transition-transform duration-300"></i>
+                                        <span>Supprimer le produit</span>
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
+
                     </div>
                 </div>
 
