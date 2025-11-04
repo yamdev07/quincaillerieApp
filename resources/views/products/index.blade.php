@@ -17,10 +17,15 @@
                     </h2>
                     <p class="text-gray-500 mt-1 text-sm">Gérez votre inventaire et vos produits en toute simplicité</p>
                 </div>
-                <a href="{{ route('products.create') }}" class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
-                    <i class="bi bi-plus-circle text-xl group-hover:rotate-90 transition-transform duration-300"></i>
-                    <span>Nouveau produit</span>
-                </a>
+                @auth
+                    @if(Auth::user()->role === 'admin')
+                        <a href="{{ route('products.create') }}" class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
+                            <i class="bi bi-plus-circle text-xl group-hover:rotate-90 transition-transform duration-300"></i>
+                            <span>Nouveau produit</span>
+                        </a>
+                    @endif
+                @endauth
+
             </div>
         </div>
 
@@ -136,23 +141,39 @@
                                         {{ $product->created_at?->format('H:i') ?? '' }}
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                               <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center justify-center gap-2">
-                                        <a href="{{ route('products.show', $product->id) }}" class="inline-flex items-center justify-center w-9 h-9 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" title="Voir">
+                                        <!-- Bouton Voir (accessible à tout le monde) -->
+                                        <a href="{{ route('products.show', $product->id) }}" 
+                                        class="inline-flex items-center justify-center w-9 h-9 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" 
+                                        title="Voir">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="{{ route('products.edit', $product->id) }}" class="inline-flex items-center justify-center w-9 h-9 bg-yellow-400 hover:bg-yellow-500 text-gray-800 rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" title="Modifier">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
-                                        <form action="{{ route('products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce produit ?')" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center justify-center w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" title="Supprimer">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
+
+                                        <!-- Boutons Modifier et Supprimer (seulement pour admin) -->
+                                        @if(Auth::user() && Auth::user()->role === 'admin')
+                                            <a href="{{ route('products.edit', $product->id) }}" 
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-yellow-400 hover:bg-yellow-500 text-gray-800 rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" 
+                                            title="Modifier">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+
+                                            <form action="{{ route('products.destroy', $product->id) }}" 
+                                                method="POST" 
+                                                onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce produit ?')" 
+                                                class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" 
+                                                        class="inline-flex items-center justify-center w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" 
+                                                        title="Supprimer">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
+
                             </tr>
                         @empty
                             <tr>

@@ -6,9 +6,10 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DashboardController;
 
 // Route de test
-Route::view('/welcomme', 'welcome');
+Route::view('/welcome', 'welcome');
 
 // Tableau de bord principal
 Route::get('/', [SaleController::class, 'dashboard'])
@@ -24,7 +25,7 @@ Route::view('/profile', 'profile')
 require __DIR__ . '/auth.php';
 
 // ======================
-// Routes protégées par authentification
+// Routes protégées par authentification (lecture seule pour les produits)
 // ======================
 Route::middleware(['auth'])->group(function () {
 
@@ -67,17 +68,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{supplier}/orders', [SupplierController::class, 'orders'])->name('suppliers.orders');
     });
 
-    // PRODUITS
+    // PRODUITS - lecture seule pour les utilisateurs
     Route::prefix('products')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('products.index');
-        Route::get('/create', [ProductController::class, 'create'])->name('products.create');
-        Route::post('/', [ProductController::class, 'store'])->name('products.store');
         Route::get('/{product}', [ProductController::class, 'show'])->name('products.show');
-        Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
-        Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
-        Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
-        Route::get('/{product}/stock', [ProductController::class, 'stock'])->name('products.stock');
-        Route::post('/{product}/stock', [ProductController::class, 'updateStock'])->name('products.stock.update');
         Route::get('/category/{category}', [ProductController::class, 'byCategory'])->name('products.byCategory');
         Route::get('/search', [ProductController::class, 'search'])->name('products.search');
     });
@@ -99,7 +93,20 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ======================
-// Routes Admin protégées par le middleware "admin"
+// Routes produits CRUD pour les admins seulement
+// ======================
+Route::middleware(['auth', 'adminmiddleware'])->prefix('products')->group(function () {
+    Route::get('/create', [ProductController::class, 'create'])->name('products.create');
+    Route::post('/', [ProductController::class, 'store'])->name('products.store');
+    Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+    Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    Route::get('/{product}/stock', [ProductController::class, 'stock'])->name('products.stock');
+    Route::post('/{product}/stock', [ProductController::class, 'updateStock'])->name('products.stock.update');
+});
+
+// ======================
+// Routes Admin (dashboard + gestion utilisateurs)
 // ======================
 Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function () {
 
@@ -117,11 +124,9 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function 
         Route::put('/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
-
 });
 
-use App\Http\Controllers\DashboardController;
-
+// Dashboard sécurisé
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->name('dashboard')
-    ->middleware('auth'); // si tu veux protéger l'accès
+    ->middleware('auth')
+    ->name('dashboard');
