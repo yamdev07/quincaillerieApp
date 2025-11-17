@@ -1,61 +1,139 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🛒 Application de Gestion de Quincaillerie
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Une application web professionnelle permettant de gérer efficacement les produits, ventes, achats, fournisseurs, clients et stocks d'une quincaillerie.  
+Développée pour offrir une interface simple, rapide et intuitive, elle facilite le suivi des opérations quotidiennes et améliore la productivité.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## ✨ Fonctionnalités principales
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 🔹 Gestion des Produits
+- Ajout, modification et suppression de produits  
+- Catégorisation des articles  
+- Gestion des prix d’achat et de vente  
+- Suivi des niveaux de stock  
+- Alertes de stock faible
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 🔹 Gestion des Ventes
+- Enregistrement rapide des ventes  
+- Calcul automatique du total  
+- Gestion des paiements (comptant / crédit)  
+- Historique complet des transactions  
+- Impression de facture
 
-## Learning Laravel
+### 🔹 Gestion des Achats
+- Enregistrement des commandes auprès des fournisseurs  
+- Suivi des réceptions  
+- Mise à jour automatique des stocks
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 🔹 Gestion des Clients
+- Ajout de clients  
+- Suivi des dettes et paiements  
+- Historique des achats par client
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 🔹 Gestion des Fournisseurs
+- Base de données des fournisseurs  
+- Historique des commandes
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 🔹 Tableau de Bord (Dashboard)
+- Vue d’ensemble des ventes du jour  
+- Recettes totales  
+- Produits en rupture  
+- Meilleures ventes  
+- Activités récentes
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 🧰 Technologies utilisées
 
-### Premium Partners
+- **Backend :** Laravel  
+- **Frontend :** Blade / Bootstrap / JavaScript  
+- **Base de données :** MySQL  
+- **Authentification :** Laravel Auth / Roles & Permissions  
+- **Autres packages :**  
+  - Spatie Laravel Permission (optionnel)  
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+## 🏗️ Installation & Configuration
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+1. Cloner le projet
+```bash
+git clone https://github.com/username/quincaillerie-app.git
+cd quincaillerie-app
+````
+---
+Installer les dépendances
+````
+composer install
+npm install
+npm run build
+````
+---
+Configurer l’environnement
+````
+cp .env.example .env
+php artisan key:generate
+````
+---
+- Configurer la base de données et les paramètres SMTP dans .env.
 
-## Code of Conduct
+- Lancer les migrations et seeders
+````
+php artisan migrate --seed
+````
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Lancer le serveur
+````
+php artisan serve
+````
+---
+👥 Gestion des rôles et permissions
 
-## Security Vulnerabilities
+Admin : Accès total
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Caissier : Gère les ventes
 
-## License
+Gestionnaire de stock : Gère les produits et stocks
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Comptes par défaut (si seed activé) :
+
+Rôle	Email	Mot de passe
+Admin	admin@example.com
+	password
+    
+## 📂 Structure du projet
+````
+- app/
+- resources/
+  - views/
+  - ...
+- routes/
+  - web.php
+- database/
+  - migrations/
+  - seeders/
+- public/
+````
+---
+🎯 Objectif du projet
+
+Offrir une solution complète et facile d'utilisation pour petites et moyennes quincailleries :
+
+Meilleure gestion du stock
+
+Rapidité à la caisse
+
+Transparence des ventes
+
+Aide à la décision via dashboard
+
+---
+🤝 Contributions
+---
+Fork & Pull Requests bienvenues.
+
+Auteurs
+---
+
+Yoann yamd
