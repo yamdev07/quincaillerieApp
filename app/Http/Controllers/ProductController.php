@@ -14,7 +14,8 @@ class ProductController extends Controller
         $products = Product::latest()->paginate(10);
 
         $totalStock = Product::sum('stock');
-        $totalValue = Product::sum(DB::raw('price * stock'));
+        // Total value = stock * prix d'achat
+        $totalValue = Product::sum(DB::raw('purchase_price * stock'));
 
         // Produits en alerte si stock ≤ 5
         $lowStockProducts = Product::where('stock', '<=', 5)->get();
@@ -32,13 +33,14 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'  => 'required|string|max:255',
-            'stock' => 'required|integer|min:0',
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string|max:1000',
+            'name'           => 'required|string|max:255',
+            'stock'          => 'required|integer|min:0',
+            'purchase_price' => 'required|numeric|min:0',
+            'sale_price'     => 'required|numeric|min:0',
+            'description'    => 'nullable|string|max:1000',
         ]);
 
-        Product::create($request->only(['name', 'stock', 'price', 'description']));
+        Product::create($request->only(['name', 'stock', 'purchase_price', 'sale_price', 'description']));
 
         return redirect()->route('products.index')->with('success', 'Produit ajouté avec succès ✅');
     }
@@ -55,19 +57,26 @@ class ProductController extends Controller
         return view('products.edit', compact('product'));
     }
 
-        public function update(Request $request, Product $product)
+    // ✏️ Mise à jour
+    public function update(Request $request, Product $product)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric',
-            'stock' => 'required|integer|min:0',
-            'description' => 'nullable|string',
+            'name'           => 'required|string|max:255',
+            'purchase_price' => 'required|numeric|min:0',
+            'sale_price'     => 'required|numeric|min:0',
+            'stock'          => 'required|integer|min:0',
+            'description'    => 'nullable|string',
         ]);
 
         $product->update($validated);
 
         return redirect()->route('products.index')->with('success', 'Produit mis à jour avec succès.');
     }
+    // 🗑️ Suppression d’un produit
+    public function destroy(Product $product)
+    {
+        $product->delete();
 
-
+        return redirect()->route('products.index')->with('success', 'Produit supprimé avec succès.');
+    }
 }

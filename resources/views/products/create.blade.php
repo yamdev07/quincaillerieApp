@@ -66,12 +66,13 @@
                         @enderror
                     </div>
 
-                    <!-- Price and Stock -->
+                    <!-- Price and Purchase Price -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Prix de vente -->
                         <div class="space-y-4">
                             <label for="price" class="block text-lg font-semibold text-gray-800 flex items-center gap-2">
                                 <i class="bi bi-currency-dollar text-green-500"></i>
-                                Prix (CFA)
+                                Prix de vente (CFA)
                             </label>
                             <div class="relative">
                                 <input type="number" step="0.01" id="price" name="price" value="{{ old('price') }}"
@@ -90,22 +91,48 @@
                             @enderror
                         </div>
 
+                        <!-- Prix d'achat (admin seulement) -->
+                        @if(auth()->user()->role === 'admin')
                         <div class="space-y-4">
-                            <label for="stock" class="block text-lg font-semibold text-gray-800 flex items-center gap-2">
-                                <i class="bi bi-box-seam text-purple-500"></i>
-                                Stock
+                            <label for="purchase_price" class="block text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                <i class="bi bi-cash-stack text-yellow-500"></i>
+                                Prix d'achat (CFA)
                             </label>
-                            <input type="number" id="stock" name="stock" value="{{ old('stock') }}"
-                                   class="w-full border-2 border-gray-200 rounded-xl px-4 py-4 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-50 transition-all duration-200 text-gray-700 placeholder-gray-400 text-lg
-                                          @error('stock') border-red-500 focus:border-red-500 focus:ring-red-50 @enderror"
-                                   placeholder="Quantité en stock..." required>
-                            @error('stock')
+                            <div class="relative">
+                                <input type="number" step="0.01" id="purchase_price" name="purchase_price" value="{{ old('purchase_price') }}"
+                                       class="w-full border-2 border-gray-200 rounded-xl px-4 py-4 pl-12 focus:outline-none focus:border-yellow-500 focus:ring-4 focus:ring-yellow-50 transition-all duration-200 text-gray-700 placeholder-gray-400 text-lg
+                                              @error('purchase_price') border-red-500 focus:border-red-500 focus:ring-red-50 @enderror"
+                                       placeholder="0.00">
+                                <div class="absolute left-4 top-1/2 transform -translate-y-1/2">
+                                    <span class="text-gray-500 font-semibold">CFA</span>
+                                </div>
+                            </div>
+                            @error('purchase_price')
                                 <p class="text-red-600 text-sm mt-2 flex items-center gap-1">
                                     <i class="bi bi-exclamation-circle"></i>
                                     {{ $message }}
                                 </p>
                             @enderror
                         </div>
+                        @endif
+                    </div>
+
+                    <!-- Stock -->
+                    <div class="space-y-4">
+                        <label for="stock" class="block text-lg font-semibold text-gray-800 flex items-center gap-2">
+                            <i class="bi bi-box-seam text-purple-500"></i>
+                            Stock
+                        </label>
+                        <input type="number" id="stock" name="stock" value="{{ old('stock') }}"
+                               class="w-full border-2 border-gray-200 rounded-xl px-4 py-4 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-50 transition-all duration-200 text-gray-700 placeholder-gray-400 text-lg
+                                      @error('stock') border-red-500 focus:border-red-500 focus:ring-red-50 @enderror"
+                               placeholder="Quantité en stock..." required>
+                        @error('stock')
+                            <p class="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <i class="bi bi-exclamation-circle"></i>
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     <!-- Description -->
@@ -129,11 +156,11 @@
 
                     <!-- Action Buttons -->
                     <div class="flex flex-col sm:flex-row justify-between gap-4 pt-8 border-t border-gray-100">
-                        <a href="{{ route('products.index') }}" class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group order-2 sm:order-1">
+                        <a href="{{ route('products.index') }}" class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 order-2 sm:order-1">
                             <i class="bi bi-arrow-left-circle text-xl group-hover:-translate-x-1 transition-transform duration-300"></i>
                             <span>Retour</span>
                         </a>
-                        <button type="submit" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group order-1 sm:order-2">
+                        <button type="submit" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 order-1 sm:order-2">
                             <i class="bi bi-plus-circle text-xl group-hover:rotate-90 transition-transform duration-300"></i>
                             <span class="text-lg">Créer le produit</span>
                         </button>
@@ -162,45 +189,23 @@
 
 <style>
 @keyframes fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
+.animate-fade-in { animation: fade-in 0.3s ease-out; }
 
-.animate-fade-in {
-    animation: fade-in 0.3s ease-out;
-}
-
-/* Style personnalisé pour les inputs number */
+/* Inputs number : hide spin buttons */
 input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-input[type="number"] {
-    -moz-appearance: textfield;
-}
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
 </style>
 
 <script>
-// Animation pour les champs au focus
 document.addEventListener('DOMContentLoaded', function() {
     const inputs = document.querySelectorAll('input, textarea');
-    
     inputs.forEach(input => {
-        input.addEventListener('focus', function() {
-            this.parentElement.classList.add('transform', 'scale-[1.02]');
-        });
-        
-        input.addEventListener('blur', function() {
-            this.parentElement.classList.remove('transform', 'scale-[1.02]');
-        });
+        input.addEventListener('focus', function() { this.parentElement.classList.add('transform','scale-[1.02]'); });
+        input.addEventListener('blur', function() { this.parentElement.classList.remove('transform','scale-[1.02]'); });
     });
 });
 </script>

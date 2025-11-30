@@ -25,11 +25,13 @@ Route::view('/profile', 'profile')
 require __DIR__ . '/auth.php';
 
 // ======================
-// Routes protégées par authentification (lecture seule pour les produits)
+// Routes protégées par authentification
 // ======================
 Route::middleware(['auth'])->group(function () {
 
+    // ----------------------
     // VENTES
+    // ----------------------
     Route::prefix('sales')->group(function () {
         Route::get('/', [SaleController::class, 'index'])->name('sales.index');
         Route::get('/create', [SaleController::class, 'create'])->name('sales.create');
@@ -42,7 +44,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{sale}/status', [SaleController::class, 'updateStatus'])->name('sales.status');
     });
 
+    // ----------------------
     // CLIENTS
+    // ----------------------
     Route::prefix('clients')->group(function () {
         Route::get('/', [ClientController::class, 'index'])->name('clients.index');
         Route::get('/create', [ClientController::class, 'create'])->name('clients.create');
@@ -55,7 +59,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{client}/statistics', [ClientController::class, 'statistics'])->name('clients.statistics');
     });
 
+    // ----------------------
     // FOURNISSEURS
+    // ----------------------
     Route::prefix('suppliers')->group(function () {
         Route::get('/', [SupplierController::class, 'index'])->name('suppliers.index');
         Route::get('/create', [SupplierController::class, 'create'])->name('suppliers.create');
@@ -68,15 +74,25 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{supplier}/orders', [SupplierController::class, 'orders'])->name('suppliers.orders');
     });
 
-    // PRODUITS - lecture seule pour les utilisateurs
+    // ----------------------
+    // PRODUITS - Lecture seule pour tous les utilisateurs
+    // ----------------------
     Route::prefix('products')->group(function () {
+
+        // Liste et recherche
         Route::get('/', [ProductController::class, 'index'])->name('products.index');
-        Route::get('/{product}', [ProductController::class, 'show'])->name('products.show');
         Route::get('/category/{category}', [ProductController::class, 'byCategory'])->name('products.byCategory');
         Route::get('/search', [ProductController::class, 'search'])->name('products.search');
+
+        // Affichage d'un produit spécifique (conflit évité avec whereNumber)
+        Route::get('/{product}', [ProductController::class, 'show'])
+             ->whereNumber('product')
+             ->name('products.show');
     });
 
+    // ----------------------
     // RAPPORTS ET STATISTIQUES
+    // ----------------------
     Route::prefix('reports')->group(function () {
         Route::get('/sales', [SaleController::class, 'salesReport'])->name('reports.sales');
         Route::get('/clients', [ClientController::class, 'clientsReport'])->name('reports.clients');
@@ -84,7 +100,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/inventory', [ProductController::class, 'inventoryReport'])->name('reports.inventory');
     });
 
+    // ----------------------
     // API TEMPS RÉEL
+    // ----------------------
     Route::prefix('api')->group(function () {
         Route::get('/dashboard-stats', [SaleController::class, 'dashboardStats'])->name('api.dashboard.stats');
         Route::get('/recent-sales', [SaleController::class, 'recentSales'])->name('api.recent.sales');
@@ -93,7 +111,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ======================
-// Routes produits CRUD pour les admins seulement
+// CRUD produits pour les admins seulement
 // ======================
 Route::middleware(['auth', 'adminmiddleware'])->prefix('products')->group(function () {
     Route::get('/create', [ProductController::class, 'create'])->name('products.create');
@@ -106,7 +124,7 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('products')->group(functi
 });
 
 // ======================
-// Routes Admin (dashboard + gestion utilisateurs)
+// Admin Dashboard + Gestion utilisateurs
 // ======================
 Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function () {
 

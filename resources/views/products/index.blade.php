@@ -93,7 +93,10 @@
                         <tr>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">ID</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Produit</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Prix</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Prix de vente</th>
+                            @if(Auth::user() && Auth::user()->role === 'admin')
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Prix d'achat</th>
+                            @endif
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Stock</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Date création</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-100 uppercase tracking-wider">Actions</th>
@@ -118,12 +121,22 @@
                                         </div>
                                     </div>
                                 </td>
+                                <!-- Prix de vente -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
                                         <span class="text-lg font-bold text-gray-800">{{ isset($product->price) ? number_format($product->price, 0, ',', ' ') : '0' }}</span>
                                         <span class="text-xs text-gray-500">CFA</span>
                                     </div>
                                 </td>
+                                <!-- Prix d'achat (admin seulement) -->
+                                @if(Auth::user() && Auth::user()->role === 'admin')
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex flex-col">
+                                            <span class="text-lg font-bold text-gray-800">{{ isset($product->purchase_price) ? number_format($product->purchase_price, 0, ',', ' ') : '0' }}</span>
+                                            <span class="text-xs text-gray-500">CFA</span>
+                                        </div>
+                                    </td>
+                                @endif
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @php $stock = $product->stock ?? 0; @endphp
                                     <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm
