@@ -85,6 +85,9 @@
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Produit</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Client</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Quantité</th>
+                            @can('admin')
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Prix d'achat</th>
+                            @endcan
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Total</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Caissier</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Date</th>
@@ -124,6 +127,14 @@
                                         {{ $sale->quantity }}
                                     </span>
                                 </td>
+                                @can('admin')
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex flex-col">
+                                            <span class="text-gray-800 font-semibold">{{ number_format($sale->purchase_price, 0, ',', ' ') }}</span>
+                                            <span class="text-xs text-gray-500">FCFA</span>
+                                        </div>
+                                    </td>
+                                @endcan
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
                                         <span class="text-lg font-bold text-gray-800">{{ number_format($sale->total_price, 0, ',', ' ') }}</span>
