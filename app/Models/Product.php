@@ -14,6 +14,7 @@ class Product extends Model
         'description',
         'sale_price',
         'stock',
+        'discount',
         'category',
         'supplier_id',
     ];
