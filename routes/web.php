@@ -6,6 +6,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 
 // Route de test
@@ -78,16 +79,18 @@ Route::middleware(['auth'])->group(function () {
     // PRODUITS - Lecture seule pour tous les utilisateurs
     // ----------------------
     Route::prefix('products')->group(function () {
-
-        // Liste et recherche
         Route::get('/', [ProductController::class, 'index'])->name('products.index');
         Route::get('/category/{category}', [ProductController::class, 'byCategory'])->name('products.byCategory');
         Route::get('/search', [ProductController::class, 'search'])->name('products.search');
+        Route::get('/{product}', [ProductController::class, 'show'])->whereNumber('product')->name('products.show');
+    });
 
-        // Affichage d'un produit spécifique (conflit évité avec whereNumber)
-        Route::get('/{product}', [ProductController::class, 'show'])
-             ->whereNumber('product')
-             ->name('products.show');
+    // ----------------------
+    // CATEGORIES - Lecture seule pour tous les utilisateurs
+    // ----------------------
+    Route::prefix('categories')->group(function () {
+        Route::get('/', [CategoryController::class, 'index'])->name('categories.index');
+        Route::get('/{category}', [CategoryController::class, 'show'])->name('categories.show');
     });
 
     // ----------------------
@@ -124,6 +127,17 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('products')->group(functi
 });
 
 // ======================
+// CRUD catégories pour les admins seulement
+// ======================
+Route::middleware(['auth', 'adminmiddleware'])->prefix('categories')->group(function () {
+    Route::get('/create', [CategoryController::class, 'create'])->name('categories.create');
+    Route::post('/', [CategoryController::class, 'store'])->name('categories.store');
+    Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
+    Route::put('/{category}', [CategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+});
+
+// ======================
 // Admin Dashboard + Gestion utilisateurs
 // ======================
 Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function () {
@@ -147,4 +161,4 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function 
 // Dashboard sécurisé
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware('auth')
-    ->name('dashboard');
+    ->name(' adashboard');
