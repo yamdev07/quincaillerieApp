@@ -680,10 +680,18 @@
                     </thead>
                     <tbody>
                         <!-- Data will be loaded via AJAX -->
-                        @forelse($recentSales as $sale)
+                       @forelse($recentSales as $sale)
                             <tr>
-                                <td><strong>{{ $sale->product->name }}</strong></td>
-                                <td>{{ $sale->client ? $sale->client->name : 'Client inconnu' }}</td>
+                                <td>
+                                    @if($sale->items->count() > 0)
+                                        @foreach($sale->items as $item)
+                                            <strong>{{ $item->product->name ?? 'Produit inconnu' }}</strong>@if(!$loop->last), @endif
+                                        @endforeach
+                                    @else
+                                        Produit inconnu
+                                    @endif
+                                </td>
+                                <td>{{ $sale->client->name ?? 'Client inconnu' }}</td>
                                 <td><strong>{{ number_format($sale->total_price, 0, ',', ' ') }} FCFA</strong></td>
                                 <td>{{ $sale->created_at->format('d/m H:i') }}</td>
                             </tr>

@@ -118,7 +118,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-purple-100 text-sm font-medium">Valeur totale</p>
-                        <h3 id="totalValue" class="text-3xl font-bold mt-1">{{ number_format($products->sum(fn($p) => $p->price * $p->stock), 0, ',', ' ') }}</h3>
+                        <!-- CORRIGÉ : Utilisation de sale_price au lieu de price -->
+                        <h3 id="totalValue" class="text-3xl font-bold mt-1">{{ number_format($products->sum(fn($p) => $p->sale_price * $p->stock), 0, ',', ' ') }}</h3>
                         <p class="text-xs text-purple-100 mt-1">CFA</p>
                     </div>
                     <div class="bg-white/20 rounded-full p-3">
@@ -147,10 +148,11 @@
                     </thead>
                     <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
                         @forelse($products as $product)
+                            <!-- CORRIGÉ : data-price changé en data-sale-price -->
                             <tr class="product-row hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent transition-all duration-200 group" 
                                 data-id="{{ $product->id }}"
                                 data-name="{{ strtolower($product->name ?? '') }}"
-                                data-price="{{ $product->price ?? 0 }}"
+                                data-price="{{ $product->sale_price ?? 0 }}"
                                 data-stock="{{ $product->stock ?? 0 }}">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-semibold text-sm group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
@@ -168,10 +170,10 @@
                                         </div>
                                     </div>
                                 </td>
-                                <!-- Prix de vente -->
+                                <!-- CORRIGÉ : Prix de vente - Utilisation de sale_price -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
-                                        <span class="text-lg font-bold text-gray-800">{{ isset($product->price) ? number_format($product->price, 0, ',', ' ') : '0' }}</span>
+                                        <span class="text-lg font-bold text-gray-800">{{ isset($product->sale_price) ? number_format($product->sale_price, 0, ',', ' ') : '0' }}</span>
                                         <span class="text-xs text-gray-500">CFA</span>
                                     </div>
                                 </td>

@@ -107,44 +107,56 @@
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-200">
-                                        @foreach($products as $index => $product)
-                                        <tr class="product-row hover:bg-gray-50 transition-colors">
+                                        <tr class="product-row hover:bg-gray-50 transition-colors animate-fade-in">
                                             <td class="px-4 py-4">
                                                 <select 
-                                                    name="products[{{ $index }}][product_id]" 
+                                                    name="products[0][product_id]" 
                                                     class="product-select w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-50 transition-all duration-200" 
-                                                    data-sale-price="{{ $product->sale_price }}"
-                                                    data-purchase-price="{{ $product->purchase_price }}"
-                                                    data-stock="{{ $product->stock }}"
                                                     required
                                                 >
                                                     <option value="">-- Choisir un produit --</option>
-                                                    <option value="{{ $product->id }}">
-                                                        {{ $product->name }} (Stock: {{ $product->stock }})
-                                                    </option>
+                                                    @foreach($products as $product)
+                                                        <option 
+                                                            value="{{ $product->id }}"
+                                                            data-sale-price="{{ $product->sale_price }}"
+                                                            data-purchase-price="{{ $product->purchase_price }}"
+                                                            data-stock="{{ $product->stock }}"
+                                                        >
+                                                            {{ $product->name }} (Stock: {{ $product->stock }})
+                                                        </option>
+                                                    @endforeach
                                                 </select>
                                             </td>
+
                                             <td class="px-4 py-4 text-center">
                                                 <span class="unit-price font-semibold text-gray-600">0 FCFA</span>
                                             </td>
+
                                             @if(auth()->user()->role === 'admin')
                                             <td class="px-4 py-4 text-center">
                                                 <span class="purchase-price font-semibold text-gray-600">0 FCFA</span>
                                             </td>
                                             @endif
+
                                             <td class="px-4 py-4">
-                                                <input type="number" name="products[{{ $index }}][quantity]" class="quantity-input w-20 border-2 border-gray-200 rounded-lg px-3 py-2 text-center focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-50 transition-all duration-200" min="1" value="1" required>
+                                                <input type="number" 
+                                                    name="products[0][quantity]" 
+                                                    class="quantity-input w-20 border-2 border-gray-200 rounded-lg px-3 py-2 text-center focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-50 transition-all duration-200" 
+                                                    min="1" 
+                                                    value="1"
+                                                    required>
                                             </td>
+
                                             <td class="px-4 py-4 text-center">
                                                 <span class="line-total font-bold text-gray-800">0 FCFA</span>
                                             </td>
+
                                             <td class="px-4 py-4 text-center">
                                                 <button type="button" class="remove-product bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white w-8 h-8 rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200 flex items-center justify-center">
                                                     <i class="bi bi-dash-lg"></i>
                                                 </button>
                                             </td>
                                         </tr>
-                                        @endforeach
                                     </tbody>
                                 </table>
                             </div>

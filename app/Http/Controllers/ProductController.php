@@ -13,16 +13,17 @@ class ProductController extends Controller
     // 🧱 Liste des produits
     public function index()
     {
-        $products = Product::latest()->paginate(10);
+        $products = Product::with(['category', 'supplier'])->latest()->paginate(10);
 
-        $totalStock = Product::sum('stock');
-        $totalValue = Product::sum(DB::raw('purchase_price * stock'));
-        $lowStockProducts = Product::where('stock', '<=', 5)->get();
+        // ICI: Utilisez quantity au lieu de stock
+        $totalStock = Product::sum('quantity');
+        $totalValue = Product::sum(DB::raw('purchase_price * quantity'));
+        $lowStockProducts = Product::where('quantity', '<=', 5)->get();
 
         return view('products.index', compact('products', 'totalStock', 'totalValue', 'lowStockProducts'));
     }
 
-    // 🆕 Page d’ajout
+    // 🆕 Page d'ajout
     public function create()
     {
         $categories = Category::all();
@@ -31,12 +32,12 @@ class ProductController extends Controller
         return view('products.create', compact('categories', 'suppliers'));
     }
 
-    // 💾 Enregistrement d’un nouveau produit
+    // 💾 Enregistrement d'un nouveau produit
     public function store(Request $request)
     {
         $request->validate([
             'name'           => 'required|string|max:255',
-            'stock'          => 'required|integer|min:0',
+            'quantity'       => 'required|integer|min:0', // ICI: quantity au lieu de stock
             'purchase_price' => 'required|numeric|min:0',
             'sale_price'     => 'required|numeric|min:0',
             'description'    => 'nullable|string|max:1000',
@@ -45,19 +46,19 @@ class ProductController extends Controller
         ]);
 
         Product::create($request->only([
-            'name', 'stock', 'purchase_price', 'sale_price', 'description', 'category_id', 'supplier_id'
+            'name', 'quantity', 'purchase_price', 'sale_price', 'description', 'category_id', 'supplier_id'
         ]));
 
         return redirect()->route('products.index')->with('success', 'Produit ajouté avec succès ✅');
     }
 
-    // 👁️ Détails d’un produit
+    // 👁️ Détails d'un produit
     public function show(Product $product)
     {
         return view('products.show', compact('product'));
     }
 
-    // ✏️ Page d’édition
+    // ✏️ Page d'édition
     public function edit(Product $product)
     {
         $categories = Category::all();
@@ -69,27 +70,48 @@ class ProductController extends Controller
     // ✏️ Mise à jour
     public function update(Request $request, Product $product)
     {
+        // DEBUG
+        \Log::info('=== DÉBUT MISE À JOUR PRODUIT ===');
+        \Log::info('Données reçues:', $request->all());
+        
         $validated = $request->validate([
             'name'           => 'required|string|max:255',
             'purchase_price' => 'required|numeric|min:0',
             'sale_price'     => 'required|numeric|min:0',
-            'stock'          => 'required|integer|min:0',
+            'quantity'       => 'required|integer|min:0', // ICI: quantity au lieu de stock
             'description'    => 'nullable|string|max:1000',
             'category_id'    => 'required|exists:categories,id',
             'supplier_id'    => 'required|exists:suppliers,id',
         ]);
-
-        $product->update($validated);
+        
+        \Log::info('Données validées:', $validated);
+        
+        // Vérifiez avant mise à jour
+        \Log::info('Avant mise à jour - sale_price:', [
+            'ancien' => $product->sale_price,
+            'nouveau' => $validated['sale_price']
+        ]);
+        
+        // Mettez à jour le produit
+        $updated = $product->update($validated);
+        
+        \Log::info('Mise à jour réussie?', ['success' => $updated]);
+        
+        // Rechargez depuis la base de données
+        $product->refresh();
+        
+        \Log::info('Après mise à jour - sale_price:', ['actuel' => $product->sale_price]);
+        \Log::info('=== FIN MISE À JOUR PRODUIT ===');
 
         return redirect()->route('products.index')->with('success', 'Produit mis à jour avec succès.');
     }
 
-    // 🗑️ Suppression d’un produit
+    // 🗑️ Suppression d'un produit
     public function destroy(Product $product)
     {
         $product->delete();
 
         return redirect()->route('products.index')->with('success', 'Produit supprimé avec succès.');
     }
+    
 }
-        
