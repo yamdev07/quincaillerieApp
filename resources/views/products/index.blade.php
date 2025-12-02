@@ -7,6 +7,14 @@
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
     <div class="container mx-auto px-4 max-w-7xl">
+        <!-- Bouton Retour -->
+        <div class="mb-4">
+            <button onclick="window.history.back()" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-2.5 px-5 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 group">
+                <i class="bi bi-arrow-left-circle text-xl group-hover:-translate-x-1 transition-transform duration-200"></i>
+                <span>Retour</span>
+            </button>
+        </div>
+
         <!-- Header Section -->
         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
@@ -25,7 +33,42 @@
                         </a>
                     @endif
                 @endauth
+            </div>
+        </div>
 
+        <!-- Barre de Recherche -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+            <div class="relative">
+                <div class="flex items-center gap-4">
+                    <div class="relative flex-1">
+                        <i class="bi bi-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="Rechercher un produit par nom, ID, prix ou stock..." 
+                            class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
+                        >
+                        <button 
+                            id="clearSearch" 
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden"
+                        >
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <button 
+                        id="searchButton"
+                        class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
+                    >
+                        <i class="bi bi-search"></i>
+                        <span>Rechercher</span>
+                    </button>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <span class="text-sm text-gray-500 flex items-center gap-1">
+                        <i class="bi bi-info-circle"></i>
+                        Recherchez par : nom, ID, prix, stock
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -51,7 +94,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-100 text-sm font-medium">Total produits</p>
-                        <h3 class="text-3xl font-bold mt-1">{{ $products->total() }}</h3>
+                        <h3 id="totalProducts" class="text-3xl font-bold mt-1">{{ $products->total() }}</h3>
                     </div>
                     <div class="bg-white/20 rounded-full p-3">
                         <i class="bi bi-box-seam text-3xl"></i>
@@ -63,7 +106,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-green-100 text-sm font-medium">Stock disponible</p>
-                        <h3 class="text-3xl font-bold mt-1">{{ $totalStock }}</h3>
+                        <h3 id="totalStock" class="text-3xl font-bold mt-1">{{ $totalStock }}</h3>
                     </div>
                     <div class="bg-white/20 rounded-full p-3">
                         <i class="bi bi-stack text-3xl"></i>
@@ -75,7 +118,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-purple-100 text-sm font-medium">Valeur totale</p>
-                        <h3 class="text-3xl font-bold mt-1">{{ number_format($products->sum(fn($p) => $p->price * $p->stock), 0, ',', ' ') }}</h3>
+                        <h3 id="totalValue" class="text-3xl font-bold mt-1">{{ number_format($products->sum(fn($p) => $p->price * $p->stock), 0, ',', ' ') }}</h3>
                         <p class="text-xs text-purple-100 mt-1">CFA</p>
                     </div>
                     <div class="bg-white/20 rounded-full p-3">
@@ -102,9 +145,13 @@
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-100 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
                         @forelse($products as $product)
-                            <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent transition-all duration-200 group">
+                            <tr class="product-row hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent transition-all duration-200 group" 
+                                data-id="{{ $product->id }}"
+                                data-name="{{ strtolower($product->name ?? '') }}"
+                                data-price="{{ $product->price ?? 0 }}"
+                                data-stock="{{ $product->stock ?? 0 }}">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-semibold text-sm group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
                                         {{ $product->id ?? 'N/A' }}
@@ -154,43 +201,43 @@
                                         {{ $product->created_at?->format('H:i') ?? '' }}
                                     </div>
                                 </td>
-                               <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <!-- Bouton Voir (accessible à tout le monde) -->
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center justify-center gap-3">
+                                        <!-- Bouton Voir -->
                                         <a href="{{ route('products.show', $product->id) }}" 
-                                        class="inline-flex items-center justify-center w-9 h-9 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" 
-                                        title="Voir">
-                                            <i class="bi bi-eye"></i>
+                                           class="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200 group"
+                                           title="Voir détails">
+                                            <i class="bi bi-eye text-lg group-hover:scale-110 transition-transform"></i>
                                         </a>
 
-                                        <!-- Boutons Modifier et Supprimer (seulement pour admin) -->
                                         @if(Auth::user() && Auth::user()->role === 'admin')
+                                            <!-- Bouton Modifier -->
                                             <a href="{{ route('products.edit', $product->id) }}" 
-                                            class="inline-flex items-center justify-center w-9 h-9 bg-yellow-400 hover:bg-yellow-500 text-gray-800 rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" 
-                                            title="Modifier">
-                                                <i class="bi bi-pencil-square"></i>
+                                               class="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-800 rounded-xl shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200 group"
+                                               title="Modifier">
+                                                <i class="bi bi-pencil-square text-lg group-hover:scale-110 transition-transform"></i>
                                             </a>
 
+                                            <!-- Bouton Supprimer -->
                                             <form action="{{ route('products.destroy', $product->id) }}" 
-                                                method="POST" 
-                                                onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce produit ?')" 
-                                                class="inline">
+                                                  method="POST" 
+                                                  onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce produit ?')" 
+                                                  class="inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" 
-                                                        class="inline-flex items-center justify-center w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" 
+                                                        class="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200 group"
                                                         title="Supprimer">
-                                                    <i class="bi bi-trash"></i>
+                                                    <i class="bi bi-trash text-lg group-hover:scale-110 transition-transform"></i>
                                                 </button>
                                             </form>
                                         @endif
                                     </div>
                                 </td>
-
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="6" class="px-6 py-16 text-center">
+                            <tr id="noResultsRow">
+                                <td colspan="7" class="px-6 py-16 text-center">
                                     <div class="flex flex-col items-center justify-center">
                                         <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                             <i class="bi bi-box-seam text-5xl text-gray-400"></i>
@@ -210,8 +257,23 @@
             </div>
         </div>
 
+        <!-- Message Aucun résultat -->
+        <div id="noResultsMessage" class="hidden bg-white rounded-2xl shadow-xl p-8 text-center border border-gray-100 mt-6">
+            <div class="flex flex-col items-center justify-center">
+                <div class="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
+                    <i class="bi bi-search text-3xl text-gray-400"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucun résultat trouvé</h3>
+                <p class="text-gray-500 mb-4">Aucun produit ne correspond à votre recherche.</p>
+                <button id="clearSearchBtn" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 inline-flex items-center gap-2">
+                    <i class="bi bi-x-circle"></i>
+                    <span>Effacer la recherche</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Pagination -->
-        <div class="mt-6 bg-white rounded-xl shadow-md p-4">
+        <div id="paginationContainer" class="mt-6 bg-white rounded-xl shadow-md p-4">
             {{ $products->links() }}
         </div>
     </div>
@@ -229,8 +291,180 @@
     }
 }
 
+@keyframes fade-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
 .animate-fade-in {
     animation: fade-in 0.3s ease-out;
 }
+
+.animate-fade-out {
+    animation: fade-out 0.3s ease-out;
+}
+
+.product-row {
+    transition: all 0.3s ease;
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const clearSearch = document.getElementById('clearSearch');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const productsTableBody = document.getElementById('productsTableBody');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    const noResultsRow = document.getElementById('noResultsRow');
+    const paginationContainer = document.getElementById('paginationContainer');
+    const totalProductsElement = document.getElementById('totalProducts');
+    const totalStockElement = document.getElementById('totalStock');
+    const totalValueElement = document.getElementById('totalValue');
+    
+    // Initialiser les valeurs
+    let originalRows = Array.from(document.querySelectorAll('.product-row'));
+    let currentRows = [...originalRows];
+
+    // Fonction de recherche
+    function performSearch() {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        
+        if (searchTerm === '') {
+            clearSearch.classList.add('hidden');
+            showAllRows();
+            updateStats();
+            return;
+        }
+        
+        clearSearch.classList.remove('hidden');
+        
+        // Filtrer les lignes
+        const filteredRows = originalRows.filter(row => {
+            const id = row.getAttribute('data-id') || '';
+            const name = row.getAttribute('data-name') || '';
+            const price = row.getAttribute('data-price') || '';
+            const stock = row.getAttribute('data-stock') || '';
+            
+            return id.includes(searchTerm) || 
+                   name.includes(searchTerm) || 
+                   price.includes(searchTerm) || 
+                   stock.includes(searchTerm);
+        });
+        
+        currentRows = filteredRows;
+        displayFilteredRows(filteredRows);
+        updateStats();
+    }
+    
+    // Afficher les lignes filtrées
+    function displayFilteredRows(rows) {
+        // Masquer toutes les lignes
+        originalRows.forEach(row => {
+            row.style.display = 'none';
+            row.classList.add('animate-fade-out');
+        });
+        
+        // Masquer la ligne "aucun résultat" initiale si elle existe
+        if (noResultsRow) {
+            noResultsRow.style.display = 'none';
+        }
+        
+        // Masquer la pagination
+        paginationContainer.style.display = 'none';
+        
+        // Afficher les lignes filtrées
+        if (rows.length > 0) {
+            rows.forEach(row => {
+                row.style.display = '';
+                row.classList.remove('animate-fade-out');
+                row.classList.add('animate-fade-in');
+            });
+            noResultsMessage.classList.add('hidden');
+        } else {
+            noResultsMessage.classList.remove('hidden');
+            noResultsMessage.classList.add('animate-fade-in');
+        }
+    }
+    
+    // Afficher toutes les lignes
+    function showAllRows() {
+        originalRows.forEach(row => {
+            row.style.display = '';
+            row.classList.remove('animate-fade-out');
+            row.classList.add('animate-fade-in');
+        });
+        
+        // Réafficher la ligne "aucun résultat" initiale si nécessaire
+        if (noResultsRow && originalRows.length === 0) {
+            noResultsRow.style.display = '';
+        }
+        
+        // Réafficher la pagination
+        paginationContainer.style.display = 'block';
+        
+        // Masquer le message "aucun résultat"
+        noResultsMessage.classList.add('hidden');
+    }
+    
+    // Mettre à jour les statistiques
+    function updateStats() {
+        let totalProducts = 0;
+        let totalStock = 0;
+        let totalValue = 0;
+        
+        currentRows.forEach(row => {
+            if (row.style.display !== 'none') {
+                totalProducts++;
+                const stock = parseInt(row.getAttribute('data-stock')) || 0;
+                const price = parseInt(row.getAttribute('data-price')) || 0;
+                totalStock += stock;
+                totalValue += stock * price;
+            }
+        });
+        
+        totalProductsElement.textContent = totalProducts;
+        totalStockElement.textContent = totalStock;
+        totalValueElement.textContent = totalValue.toLocaleString('fr-FR');
+    }
+    
+    // Événements
+    searchButton.addEventListener('click', performSearch);
+    
+    searchInput.addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+            performSearch();
+        }
+        performSearch(); // Recherche en temps réel
+    });
+    
+    clearSearch.addEventListener('click', function() {
+        searchInput.value = '';
+        clearSearch.classList.add('hidden');
+        showAllRows();
+        updateStats();
+        searchInput.focus();
+    });
+    
+    clearSearchBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        clearSearch.classList.add('hidden');
+        showAllRows();
+        updateStats();
+        searchInput.focus();
+    });
+    
+    // Recherche initiale si l'input a déjà une valeur (après F5 par exemple)
+    if (searchInput.value.trim() !== '') {
+        performSearch();
+    }
+});
+</script>
 @endsection
