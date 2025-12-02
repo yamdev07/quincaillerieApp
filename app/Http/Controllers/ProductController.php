@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Category;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -14,10 +16,7 @@ class ProductController extends Controller
         $products = Product::latest()->paginate(10);
 
         $totalStock = Product::sum('stock');
-        // Total value = stock * prix d'achat
         $totalValue = Product::sum(DB::raw('purchase_price * stock'));
-
-        // Produits en alerte si stock ≤ 5
         $lowStockProducts = Product::where('stock', '<=', 5)->get();
 
         return view('products.index', compact('products', 'totalStock', 'totalValue', 'lowStockProducts'));
@@ -26,7 +25,10 @@ class ProductController extends Controller
     // 🆕 Page d’ajout
     public function create()
     {
-        return view('products.create');
+        $categories = Category::all();
+        $suppliers  = Supplier::all();
+
+        return view('products.create', compact('categories', 'suppliers'));
     }
 
     // 💾 Enregistrement d’un nouveau produit
@@ -38,9 +40,13 @@ class ProductController extends Controller
             'purchase_price' => 'required|numeric|min:0',
             'sale_price'     => 'required|numeric|min:0',
             'description'    => 'nullable|string|max:1000',
+            'category_id'    => 'required|exists:categories,id',
+            'supplier_id'    => 'required|exists:suppliers,id',
         ]);
 
-        Product::create($request->only(['name', 'stock', 'purchase_price', 'sale_price', 'description']));
+        Product::create($request->only([
+            'name', 'stock', 'purchase_price', 'sale_price', 'description', 'category_id', 'supplier_id'
+        ]));
 
         return redirect()->route('products.index')->with('success', 'Produit ajouté avec succès ✅');
     }
@@ -54,7 +60,10 @@ class ProductController extends Controller
     // ✏️ Page d’édition
     public function edit(Product $product)
     {
-        return view('products.edit', compact('product'));
+        $categories = Category::all();
+        $suppliers  = Supplier::all();
+
+        return view('products.edit', compact('product', 'categories', 'suppliers'));
     }
 
     // ✏️ Mise à jour
@@ -65,13 +74,16 @@ class ProductController extends Controller
             'purchase_price' => 'required|numeric|min:0',
             'sale_price'     => 'required|numeric|min:0',
             'stock'          => 'required|integer|min:0',
-            'description'    => 'nullable|string',
+            'description'    => 'nullable|string|max:1000',
+            'category_id'    => 'required|exists:categories,id',
+            'supplier_id'    => 'required|exists:suppliers,id',
         ]);
 
         $product->update($validated);
 
         return redirect()->route('products.index')->with('success', 'Produit mis à jour avec succès.');
     }
+
     // 🗑️ Suppression d’un produit
     public function destroy(Product $product)
     {
@@ -80,3 +92,4 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Produit supprimé avec succès.');
     }
 }
+        

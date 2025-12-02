@@ -178,6 +178,7 @@
         border-radius: 0.75rem;
         box-shadow: var(--card-shadow);
         overflow: hidden;
+        min-height: 400px;
     }
 
     .card-header {
@@ -212,6 +213,53 @@
     .chart-area {
         padding: 1.5rem;
         height: 350px;
+        position: relative;
+    }
+
+    .chart-loading {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 1rem;
+        z-index: 10;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .chart-error {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 2rem;
+        text-align: center;
+        color: var(--danger);
     }
 
     /* Sidebar Cards */
@@ -382,6 +430,7 @@
         font-weight: 500;
         position: relative;
         transition: color 0.2s ease;
+        cursor: pointer;
     }
 
     .tab:hover {
@@ -403,20 +452,23 @@
         background-color: var(--primary);
     }
 
-    /* Empty States */
-    .empty-state {
-        padding: 3rem 1.5rem;
-        text-align: center;
-        color: var(--secondary);
+    /* Loading states */
+    .loading-shimmer {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
     }
 
-    .empty-icon {
-        margin-bottom: 1rem;
-        opacity: 0.5;
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
     }
 
-    .empty-text {
-        font-size: 0.875rem;
+    .skeleton {
+        background: #f0f0f0;
+        border-radius: 4px;
+        height: 20px;
+        margin-bottom: 10px;
     }
 
     /* Animations */
@@ -444,28 +496,18 @@
             <p class="page-subtitle">Aperçu de votre quincaillerie</p>
         </div>
         <div class="header-actions">
-            <!-- Bouton Nouvelle vente -->
             <a href="{{ route('sales.create') }}" class="btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-                </svg>
+                <i class="bi bi-plus-circle"></i>
                 Nouvelle vente
             </a>
-
-            <!-- Bouton Gestion des employés (visible seulement pour admin) -->
             @if(in_array(strtolower(auth()->user()->role), ['admin', 'super admin']))
                 <a href="{{ route('users.index') }}" class="btn" style="margin-left: 10px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M3 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H3zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-                    </svg>
+                    <i class="bi bi-people"></i>
                     Gestion des employés
                 </a>
             @endif
-
         </div>
     </div>
-
-
 
     <!-- Stats Overview -->
     <div class="stats-grid">
@@ -473,12 +515,10 @@
             <div class="stat-header">
                 <div class="stat-title">Ventes aujourd'hui</div>
                 <div class="stat-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M0 2a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1v7.5a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 1 12.5V5a1 1 0 0 1-1-1V2zm2 3v7.5A1.5 1.5 0 0 0 3.5 14h9a1.5 1.5 0 0 0 1.5-1.5V5H2zm13-3H1v2h14V2zM5 7.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
-                    </svg>
+                    <i class="bi bi-cart"></i>
                 </div>
             </div>
-            <div class="stat-value">{{ $salesToday ?? 0 }}</div>
+            <div class="stat-value" id="salesToday">{{ $salesToday ?? 0 }}</div>
             <div class="stat-description">Transactions aujourd'hui</div>
         </div>
         
@@ -486,48 +526,35 @@
             <div class="stat-header">
                 <div class="stat-title">Chiffre d'affaires</div>
                 <div class="stat-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
-                        <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4zm3 0a2 2 0 0 1-2 2v4a2 2 0 0 1 2 2h10a2 2 0 0 1 2-2V6a2 2 0 0 1-2-2H3z"/>
-                    </svg>
+                    <i class="bi bi-currency-dollar"></i>
                 </div>
             </div>
-            <div class="stat-value">{{ number_format($totalRevenue ?? 0, 0, ',', ' ') }} FCFA</div>
+            <div class="stat-value" id="totalRevenue">{{ number_format($totalRevenue ?? 0, 0, ',', ' ') }} FCFA</div>
             <div class="stat-description">Total des revenus</div>
         </div>
         
-       <div class="stat-card stock p-5 rounded-xl shadow-md 
+        <div class="stat-card stock p-5 rounded-xl shadow-md 
             {{ ($lowStockProducts->count() ?? 0) > 0 ? 'bg-red-100 border-2 border-red-500 animate-pulse' : 'bg-white' }}">
-            
             <div class="stat-header flex justify-between items-center mb-4">
                 <div class="stat-title text-gray-600 font-semibold uppercase text-sm">Alertes stock</div>
                 <div class="stat-icon w-10 h-10 flex items-center justify-center rounded bg-red-200 text-red-600">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                 </div>
             </div>
-
-            <div class="stat-value text-3xl font-bold text-gray-800">
+            <div class="stat-value text-3xl font-bold text-gray-800" id="lowStockCount">
                 {{ $lowStockProducts->count() ?? 0 }}
             </div>
-            
-            <div class="stat-description text-gray-500 mt-1">
-                Produits à réapprovisionner
-            </div>
+            <div class="stat-description text-gray-500 mt-1">Produits à réapprovisionner</div>
         </div>
-
-
         
         <div class="stat-card clients">
             <div class="stat-header">
                 <div class="stat-title">Clients actifs</div>
                 <div class="stat-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-                        <path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6.28c.32.246.603.522.846.816C13.623 10.958 14 12.01 14 13c0 .53-.134 1.023-.374 1.47A3.983 3.983 0 0 1 12 16H4a3.983 3.983 0 0 1-1.626-3.53A2.508 2.508 0 0 1 2 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6.28c.32.246.603.522.846.816C10.623 10.958 11 12.01 11 13c0 .53-.134 1.023-.374 1.47A3.983 3.983 0 0 1 9 16H5.216z"/>
-                    </svg>
+                    <i class="bi bi-people"></i>
                 </div>
             </div>
-            <div class="stat-value">{{ $activeClients ?? 0 }}</div>
+            <div class="stat-value" id="activeClients">{{ $activeClients ?? 0 }}</div>
             <div class="stat-description">Clients ce mois-ci</div>
         </div>
     </div>
@@ -539,14 +566,30 @@
             <div class="card-header">
                 <h2 class="card-title">Évolution des ventes</h2>
                 <div class="card-actions">
-                    <select>
-                        <option>7 derniers jours</option>
-                        <option>30 derniers jours</option>
-                        <option>3 derniers mois</option>
+                    <select id="chartPeriod">
+                        <option value="7">7 derniers jours</option>
+                        <option value="30">30 derniers jours</option>
+                        <option value="90">3 derniers mois</option>
                     </select>
                 </div>
             </div>
             <div class="chart-area">
+                <!-- Loading State -->
+                <div class="chart-loading" id="chartLoading">
+                    <div class="spinner"></div>
+                    <p>Chargement des données...</p>
+                </div>
+                
+                <!-- Error State -->
+                <div class="chart-error" id="chartError" style="display: none;">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+                    <p>Impossible de charger les données du graphique</p>
+                    <button onclick="loadChartData()" class="btn" style="background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 0.375rem;">
+                        Réessayer
+                    </button>
+                </div>
+                
+                <!-- Chart Canvas -->
                 <canvas id="salesChart"></canvas>
             </div>
         </div>
@@ -557,7 +600,7 @@
                 <div class="sidebar-card-header">
                     <h3 class="sidebar-card-title">Vente moyenne</h3>
                 </div>
-                <div class="sidebar-card-value">
+                <div class="sidebar-card-value" id="averageSale">
                     {{ $totalRevenue && $salesToday ? number_format($totalRevenue / max($salesToday, 1), 0, ',', ' ') : 0 }} FCFA
                 </div>
                 <div class="sidebar-card-footer">Par transaction aujourd'hui</div>
@@ -567,7 +610,7 @@
                 <div class="sidebar-card-header">
                     <h3 class="sidebar-card-title">Statut du stock</h3>
                 </div>
-                <div class="sidebar-card-value">
+                <div class="sidebar-card-value" id="stockStatus">
                     @if(($lowStockProducts->count() ?? 0) === 0)
                         <div style="color: var(--success); font-size: 2.5rem;">✓</div>
                         <div style="color: var(--success); font-weight: 600;">Tout va bien</div>
@@ -585,38 +628,27 @@
                 <ul class="quick-links">
                     <li>
                         <a href="{{ route('clients.index') }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-                                <path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6.28c.32.246.603.522.846.816C13.623 10.958 14 12.01 14 13c0 .53-.134 1.023-.374 1.47A3.983 3.983 0 0 1 12 16H4a3.983 3.983 0 0 1-1.626-3.53A2.508 2.508 0 0 1 2 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v6.28c.32.246.603.522.846.816C10.623 10.958 11 12.01 11 13c0 .53-.134 1.023-.374 1.47A3.983 3.983 0 0 1 9 16H5.216z"/>
-                            </svg>
+                            <i class="bi bi-people"></i>
                             Clients
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('suppliers.index') }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1H.5zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-                            </svg>
+                            <i class="bi bi-truck"></i>
                             Fournisseurs
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('products.index') }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                <path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z"/>
-                            </svg>
+                            <i class="bi bi-box-seam"></i>
                             Produits
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('categories.index') }}">
-                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                 fill="currentColor" viewBox="0 0 16 16">
-                                 <path d="M2 3a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1H7.5L6 1.5H2z"/>
-                                 <path d="M15 6H1v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6z"/>
-                             </svg>
-                             Catégories
-                         </a>
+                            <i class="bi bi-folder"></i>
+                            Catégories
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -625,8 +657,8 @@
 
     <!-- Navigation Tabs -->
     <div class="tabs">
-        <a href="#recent-sales" class="tab active">Ventes récentes</a>
-        <a href="#low-stock" class="tab">Stock faible</a>
+        <a href="#" class="tab active" onclick="switchTab('recent-sales')">Ventes récentes</a>
+        <a href="#" class="tab" onclick="switchTab('low-stock')">Stock faible</a>
     </div>
 
     <!-- Tables Section -->
@@ -637,7 +669,7 @@
                 <h3 class="table-title">Dernières transactions</h3>
             </div>
             <div class="table-container">
-                <table>
+                <table id="recentSalesTable">
                     <thead>
                         <tr>
                             <th>Produit</th>
@@ -647,6 +679,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Data will be loaded via AJAX -->
                         @forelse($recentSales as $sale)
                             <tr>
                                 <td><strong>{{ $sale->product->name }}</strong></td>
@@ -656,11 +689,8 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4">
-                                    <div class="empty-state">
-                                        <div class="empty-icon">📝</div>
-                                        <div class="empty-text">Aucune vente récente</div>
-                                    </div>
+                                <td colspan="4" class="text-center py-4">
+                                    Aucune vente récente
                                 </td>
                             </tr>
                         @endforelse
@@ -675,7 +705,7 @@
                 <h3 class="table-title">Stock faible</h3>
             </div>
             <div class="table-container">
-                <table>
+                <table id="lowStockTable">
                     <thead>
                         <tr>
                             <th>Produit</th>
@@ -684,6 +714,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Data will be loaded via AJAX -->
                         @forelse($lowStockProducts as $product)
                             <tr>
                                 <td><strong>{{ $product->name }}</strong></td>
@@ -692,11 +723,8 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3">
-                                    <div class="empty-state">
-                                        <div class="empty-icon">✅</div>
-                                        <div class="empty-text">Stock optimal</div>
-                                    </div>
+                                <td colspan="3" class="text-center py-4">
+                                    Stock optimal
                                 </td>
                             </tr>
                         @endforelse
@@ -709,85 +737,415 @@
 @endsection
 
 @section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('salesChart').getContext('2d');
+// Variables globales
+let salesChart = null;
+let currentPeriod = 7;
+let isLoading = false;
+
+// Fonction pour charger les données du graphique via AJAX
+async function loadChartData(period = currentPeriod) {
+    if (isLoading) return;
+    
+    isLoading = true;
+    currentPeriod = period;
+    
+    const loadingElement = document.getElementById('chartLoading');
+    const errorElement = document.getElementById('chartError');
+    const canvas = document.getElementById('salesChart');
+    
+    // Afficher le loader
+    loadingElement.style.display = 'flex';
+    errorElement.style.display = 'none';
+    
+    try {
+        // Récupérer le token CSRF
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
-        // Configuration du graphique
-        const salesChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: @json($dates ?? []),
-                datasets: [{
-                    label: 'Ventes (FCFA)',
-                    data: @json($totals ?? []),
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#2563eb',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: {
-                            color: '#f1f5f9',
-                            borderDash: [5, 5]
-                        },
-                        ticks: {
-                            color: '#64748b',
-                            font: {
-                                size: 12,
-                                weight: '500'
-                            }
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: '#f1f5f9',
-                            borderDash: [5, 5]
-                        },
-                        ticks: {
-                            color: '#64748b',
-                            font: {
-                                size: 12,
-                                weight: '500'
-                            }
-                        }
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                }
+        // Faire la requête AJAX - NOTE: URL mise à jour pour web.php
+        const response = await fetch(`/ajax/dashboard/chart-data?period=${period}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': token
             }
         });
+        
+        if (!response.ok) {
+            throw new Error('Erreur réseau: ' + response.status);
+        }
+        
+        const data = await response.json();
+        
+        // Masquer le loader
+        loadingElement.style.display = 'none';
+        
+        // Créer ou mettre à jour le graphique
+        if (salesChart) {
+            salesChart.destroy();
+        }
+        
+        createChart(data);
+        
+    } catch (error) {
+        console.error('Erreur lors du chargement du graphique:', error);
+        loadingElement.style.display = 'none';
+        errorElement.style.display = 'flex';
+    } finally {
+        isLoading = false;
+    }
+}
 
-        // Navigation tabs functionality
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Here you would typically show/hide the corresponding content
-                // For simplicity, we're not implementing the full tab content switching
-            });
-        });
+// Fonction pour créer le graphique
+function createChart(data) {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    
+    // Configuration optimisée pour les performances
+    salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.dates || [],
+            datasets: [{
+                label: 'Ventes (FCFA)',
+                data: data.totals || [],
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#2563eb',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 1,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 300,
+                easing: 'easeOutQuart'
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    padding: 10,
+                    cornerRadius: 4,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('fr-FR').format(context.parsed.y) + ' FCFA';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        maxRotation: 0,
+                        autoSkip: true,
+                        maxTicksLimit: 10
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            if (value >= 1000000) {
+                                return (value / 1000000).toFixed(1) + 'M';
+                            }
+                            if (value >= 1000) {
+                                return (value / 1000).toFixed(0) + 'k';
+                            }
+                            return value;
+                        }
+                    }
+                }
+            }
+        }
     });
+}
+
+// Fonction pour charger les statistiques via AJAX
+async function loadStats() {
+    try {
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // URL mise à jour
+        const response = await fetch('/ajax/dashboard/stats', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': token
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Mettre à jour les statistiques
+            document.getElementById('salesToday').textContent = data.salesToday || 0;
+            
+            const revenueElement = document.getElementById('totalRevenue');
+            if (data.totalRevenue) {
+                revenueElement.textContent = data.totalRevenue.toLocaleString('fr-FR') + ' FCFA';
+            } else {
+                revenueElement.textContent = '0 FCFA';
+            }
+            
+            document.getElementById('lowStockCount').textContent = data.lowStockCount || 0;
+            document.getElementById('activeClients').textContent = data.activeClients || 0;
+            
+            const averageSaleElement = document.getElementById('averageSale');
+            if (data.averageSale) {
+                averageSaleElement.textContent = Math.round(data.averageSale).toLocaleString('fr-FR') + ' FCFA';
+            } else {
+                averageSaleElement.textContent = '0 FCFA';
+            }
+            
+            // Mettre à jour le statut du stock
+            const stockStatusElement = document.getElementById('stockStatus');
+            if (data.lowStockCount === 0) {
+                stockStatusElement.innerHTML = `
+                    <div style="color: #10b981; font-size: 2.5rem;">✓</div>
+                    <div style="color: #10b981; font-weight: 600;">Tout va bien</div>
+                `;
+            } else {
+                stockStatusElement.innerHTML = `
+                    <div style="color: #ef4444; font-size: 2.5rem;">!</div>
+                    <div style="color: #ef4444; font-weight: 600;">Attention requise</div>
+                `;
+            }
+        } else {
+            console.error('Statut HTTP:', response.status);
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement des statistiques:', error);
+    }
+}
+
+// Fonction pour charger les ventes récentes via AJAX
+async function loadRecentSales() {
+    try {
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // URL mise à jour
+        const response = await fetch('/ajax/dashboard/recent-sales', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': token
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const tbody = document.querySelector('#recentSalesTable tbody');
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-4">
+                            Aucune vente récente
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = data.map(sale => `
+                    <tr>
+                        <td><strong>${sale.product_name || 'Produit inconnu'}</strong></td>
+                        <td>${sale.client_name || 'Client inconnu'}</td>
+                        <td><strong>${parseInt(sale.total_price || 0).toLocaleString('fr-FR')} FCFA</strong></td>
+                        <td>${formatDateTime(sale.created_at)}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement des ventes récentes:', error);
+    }
+}
+
+// Fonction pour charger le stock faible via AJAX
+async function loadLowStock() {
+    try {
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // URL mise à jour
+        const response = await fetch('/ajax/dashboard/low-stock', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': token
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const tbody = document.querySelector('#lowStockTable tbody');
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="text-center py-4">
+                            Stock optimal
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = data.map(product => `
+                    <tr>
+                        <td><strong>${product.name || 'Produit inconnu'}</strong></td>
+                        <td><span class="badge badge-low">${product.stock || 0}</span></td>
+                        <td>${parseInt(product.price || 0).toLocaleString('fr-FR')} FCFA</td>
+                    </tr>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement du stock faible:', error);
+    }
+}
+
+// Fonction utilitaire pour formater la date
+function formatDateTime(dateString) {
+    if (!dateString) return 'Date inconnue';
+    
+    try {
+        const date = new Date(dateString);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        
+        return `${day}/${month} ${hours}:${minutes}`;
+    } catch (error) {
+        return 'Date invalide';
+    }
+}
+
+// Fonction pour switcher entre les onglets
+function switchTab(tabName) {
+    // Mettre à jour les onglets actifs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Optionnel: Charger des données spécifiques à l'onglet
+    if (tabName === 'recent-sales') {
+        loadRecentSales();
+    } else if (tabName === 'low-stock') {
+        loadLowStock();
+    }
+}
+
+// Fonction pour tester les URLs avant de charger
+async function testRoutes() {
+    const routes = [
+        '/ajax/dashboard/chart-data',
+        '/ajax/dashboard/stats',
+        '/ajax/dashboard/recent-sales',
+        '/ajax/dashboard/low-stock'
+    ];
+    
+    console.log('Test des routes AJAX...');
+    
+    for (const route of routes) {
+        try {
+            const response = await fetch(route, { 
+                method: 'HEAD',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            console.log(`${route}: ${response.status} ${response.statusText}`);
+        } catch (error) {
+            console.error(`${route}: ${error.message}`);
+        }
+    }
+}
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Tester les routes (optionnel - pour débogage)
+    // testRoutes();
+    
+    // Charger le graphique via AJAX
+    loadChartData();
+    
+    // Charger les statistiques en arrière-plan
+    setTimeout(() => {
+        loadStats();
+        loadRecentSales();
+        loadLowStock();
+    }, 500); // Petit délai pour éviter le blocage
+    
+    // Gestionnaire d'événement pour le changement de période
+    document.getElementById('chartPeriod').addEventListener('change', function() {
+        loadChartData(parseInt(this.value));
+    });
+    
+    // Rafraîchissement automatique toutes les 5 minutes
+    setInterval(() => {
+        loadChartData(currentPeriod);
+        loadStats();
+        loadRecentSales();
+        loadLowStock();
+    }, 300000); // 5 minutes
+    
+    // Ajouter des gestionnaires d'erreur globaux
+    window.addEventListener('error', function(e) {
+        console.error('Erreur globale:', e.error);
+    });
+    
+    window.addEventListener('unhandledrejection', function(e) {
+        console.error('Promesse rejetée non gérée:', e.reason);
+    });
+});
+
+// Optimisation des performances
+window.addEventListener('load', function() {
+    // Chargement différé des images
+    const images = document.querySelectorAll('img[data-src]');
+    images.forEach(img => {
+        img.src = img.dataset.src;
+    });
+    
+    // Nettoyage des écouteurs d'événements quand la page est quittée
+    window.addEventListener('beforeunload', function() {
+        if (salesChart) {
+            salesChart.destroy();
+        }
+    });
+});
+
+// Fonction de fallback si les données sont déjà dans la page
+function initializeWithExistingData() {
+    // Vérifier si les données sont déjà disponibles dans le DOM
+    const salesToday = document.getElementById('salesToday').textContent;
+    const totalRevenue = document.getElementById('totalRevenue').textContent;
+    
+    console.log('Données initiales:', { salesToday, totalRevenue });
+}
 </script>
 @endsection
