@@ -7,56 +7,79 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    // Afficher toutes les catégories
+    // -------------------------
+    // ROUTES PUBLIQUES
+    // -------------------------
+
+    // Affiche toutes les catégories (lecture seule)
     public function index()
     {
         $categories = Category::all();
         return view('categories.index', compact('categories'));
     }
 
-    // Afficher le formulaire de création
+    // Affiche une catégorie spécifique (lecture seule)
+    public function show($id)
+    {
+        $category = Category::findOrFail($id);
+        return view('categories.show', compact('category'));
+    }
+
+    // -------------------------
+    // ROUTES ADMIN
+    // -------------------------
+
+    // Formulaire pour créer une nouvelle catégorie
     public function create()
     {
         return view('categories.create');
     }
 
-    // Enregistrer une nouvelle catégorie
+    // Enregistre une nouvelle catégorie
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'sub_name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:categories,name',
         ]);
 
-        Category::create($request->all());
+        Category::create([
+            'name' => $request->name,
+            'description' => $request->description ?? null,
+        ]);
 
         return redirect()->route('categories.index')->with('success', 'Catégorie créée avec succès.');
     }
 
-    // Afficher le formulaire d'édition
-    public function edit(Category $category)
+    // Formulaire pour éditer une catégorie existante
+    public function edit($id)
     {
+        $category = Category::findOrFail($id);
         return view('categories.edit', compact('category'));
     }
 
-    // Mettre à jour la catégorie
-    public function update(Request $request, Category $category)
+    // Met à jour une catégorie existante
+    public function update(Request $request, $id)
     {
+        $category = Category::findOrFail($id);
+
         $request->validate([
-            'name' => 'required|string|max:255',
-            'sub_name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
         ]);
 
-        $category->update($request->all());
+        $category->update([
+            'name' => $request->name,
+            'description' => $request->description ?? null,
+        ]);
 
-        return redirect()->route('categories.index')->with('success', 'Catégorie mise à jour.');
+        return redirect()->route('categories.index')->with('success', 'Catégorie mise à jour avec succès.');
     }
 
-    // Supprimer une catégorie
-    public function destroy(Category $category)
+    // Supprime une catégorie
+    public function destroy($id)
     {
+        $category = Category::findOrFail($id);
         $category->delete();
 
-        return redirect()->route('categories.index')->with('success', 'Catégorie supprimée.');
+        return redirect()->route('categories.index')->with('success', 'Catégorie supprimée avec succès.');
     }
 }
