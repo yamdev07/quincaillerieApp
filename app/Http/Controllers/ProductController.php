@@ -65,7 +65,7 @@ class ProductController extends Controller
         
         $products = $query->paginate(10);
         
-        // Calcul des statistiques
+        // Calcul des statistiques (SEULEMENT stock)
         $totalStock = $products->sum('stock');
         $totalValue = $products->sum(function($product) {
             return ($product->sale_price ?? 0) * ($product->stock ?? 0);
@@ -84,8 +84,6 @@ class ProductController extends Controller
         return $this->index($request);
     }
 
-    // ... (le reste de vos méthodes reste inchangé)
-
     // 🆕 Page d'ajout
     public function create()
     {
@@ -100,7 +98,7 @@ class ProductController extends Controller
     {
         $request->validate([
             'name'           => 'required|string|max:255',
-            'quantity'       => 'required|integer|min:0', // Quantité totale achetée
+            'stock'          => 'required|integer|min:0', // SEULEMENT stock
             'purchase_price' => 'required|numeric|min:0',
             'sale_price'     => 'required|numeric|min:0',
             'description'    => 'nullable|string|max:1000',
@@ -108,11 +106,11 @@ class ProductController extends Controller
             'supplier_id'    => 'required|exists:suppliers,id',
         ]);
 
-        // Créer le produit avec les deux champs synchronisés
+        // Créer le produit (quantité = stock pour compatibilité)
         Product::create([
             'name'           => $request->name,
-            'quantity'       => $request->quantity, // Quantité totale achetée (historique)
-            'stock'          => $request->quantity, // Stock initial = tout ce qui a été acheté
+            'stock'          => $request->stock, // Stock disponible
+            'quantity'       => $request->stock, // Même valeur que stock (compatibilité)
             'purchase_price' => $request->purchase_price,
             'sale_price'     => $request->sale_price,
             'description'    => $request->description,
@@ -126,7 +124,7 @@ class ProductController extends Controller
     // 👁️ Détails d'un produit
     public function show(Product $product)
     {
-        // Calculer la quantité vendue (optionnel)
+        // Calculer la quantité vendue (optionnel) - maintenir pour compatibilité
         $quantitySold = $product->quantity - $product->stock;
         
         return view('products.show', compact('product', 'quantitySold'));
@@ -141,36 +139,35 @@ class ProductController extends Controller
         return view('products.edit', compact('product', 'categories', 'suppliers'));
     }
 
-    // ✏️ Mise à jour
+    // ✏️ Mise à jour (SIMPLIFIÉE)
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate([
             'name'           => 'required|string|max:255',
             'purchase_price' => 'required|numeric|min:0',
             'sale_price'     => 'required|numeric|min:0',
-            'quantity'       => 'required|integer|min:0', // Nouvelle quantité totale achetée
+            'stock'          => 'required|integer|min:0', // SEULEMENT stock
             'description'    => 'nullable|string|max:1000',
             'category_id'    => 'required|exists:categories,id',
             'supplier_id'    => 'required|exists:suppliers,id',
         ]);
         
-        // Calculer la différence d'achat
-        $purchaseDifference = $validated['quantity'] - $product->quantity;
+        // Synchroniser quantity avec stock (pour compatibilité)
+        $validated['quantity'] = $validated['stock'];
         
-        // Ajuster le stock disponible en conséquence
-        // Si on achète plus (+), on ajoute au stock
-        // Si on ajuste la quantité totale (-), on ne touche pas au stock disponible
-        $validated['stock'] = max(0, $product->stock + max(0, $purchaseDifference));
-        
+        // Mettre à jour le produit
         $product->update($validated);
-
+        
         return redirect()->route('products.index')->with('success', 'Produit mis à jour avec succès.');
     }
 
-    // 🗑️ Suppression d'un produit
+    // 🗑️ Suppression d'un produit (SIMPLIFIÉE)
     public function destroy(Product $product)
     {
         // Vérifier si le produit a été vendu (stock < quantity)
+        // Mais comme quantity = stock maintenant, cette vérification est inutile
+        // Gardons-la pour sécurité si des anciennes données existent
+        
         if ($product->stock < $product->quantity) {
             return redirect()->route('products.index')
                 ->with('warning', 'Impossible de supprimer ce produit car des ventes sont associées.');
@@ -181,7 +178,7 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Produit supprimé avec succès.');
     }
 
-    // 📊 Rapport des produits (optionnel)
+    // 📊 Rapport des produits (optionnel) - SIMPLIFIÉ
     public function productsReport()
     {
         $products = Product::with(['category', 'supplier'])
@@ -193,14 +190,14 @@ class ProductController extends Controller
             'total_stock_value' => $products->sum(fn($p) => $p->stock * $p->purchase_price),
             'low_stock' => $products->where('stock', '<', 5)->count(),
             'out_of_stock' => $products->where('stock', '=', 0)->count(),
-            'total_purchased' => $products->sum('quantity'), // Quantité totale achetée
-            'total_sold' => $products->sum(fn($p) => $p->quantity - $p->stock), // Quantité vendue
+            'total_purchased' => $products->sum('stock'), // Maintenant = total_stock
+            'total_sold' => 0, // Pas de calcul de vente séparé
         ];
 
         return view('reports.products', compact('products', 'reportData'));
     }
 
-    // 📦 Gestion manuelle du stock (ajustement)
+    // 📦 Gestion manuelle du stock (ajustement) - SIMPLIFIÉ
     public function stockAdjustment(Request $request, Product $product)
     {
         $request->validate([
@@ -215,8 +212,6 @@ class ProductController extends Controller
             switch ($request->adjustment_type) {
                 case 'add':
                     $newStock = $oldStock + $request->amount;
-                    // Ajuster aussi la quantité totale
-                    $product->increment('quantity', $request->amount);
                     break;
                     
                 case 'remove':
@@ -228,15 +223,14 @@ class ProductController extends Controller
                     
                 case 'set':
                     $newStock = $request->amount;
-                    // Ajuster la quantité totale si nécessaire
-                    if ($request->amount > $product->quantity) {
-                        $product->quantity = $request->amount;
-                        $product->save();
-                    }
                     break;
             }
             
-            $product->update(['stock' => $newStock]);
+            // Mettre à jour stock ET quantity (pour synchronisation)
+            $product->update([
+                'stock' => $newStock,
+                'quantity' => $newStock
+            ]);
             
             // Historique des ajustements (optionnel)
             // StockAdjustment::create([...]);
@@ -246,7 +240,7 @@ class ProductController extends Controller
             ->with('success', "Stock ajusté avec succès : {$oldStock} → {$product->stock}");
     }
 
-    // 🔄 Réapprovisionnement
+    // 🔄 Réapprovisionnement (SIMPLIFIÉ)
     public function restock(Request $request, Product $product)
     {
         $request->validate([
@@ -257,12 +251,11 @@ class ProductController extends Controller
         
         DB::transaction(function () use ($request, $product) {
             $oldStock = $product->stock;
-            $oldQuantity = $product->quantity;
             
             // Ajouter au stock disponible
             $product->increment('stock', $request->amount);
             
-            // Ajouter à la quantité totale achetée
+            // Synchroniser quantity avec stock
             $product->increment('quantity', $request->amount);
             
             // Mettre à jour le prix d'achat si fourni
@@ -274,16 +267,13 @@ class ProductController extends Controller
             if ($request->filled('supplier_id')) {
                 $product->update(['supplier_id' => $request->supplier_id]);
             }
-            
-            // Historique de réapprovisionnement (optionnel)
-            // RestockHistory::create([...]);
         });
         
         return redirect()->route('products.index')
             ->with('success', "Réapprovisionnement réussi : +{$request->amount} unités");
     }
 
-    // 📈 Statistiques rapides (pour dashboard)
+    // 📈 Statistiques rapides (pour dashboard) - SIMPLIFIÉES
     public function getQuickStats()
     {
         return response()->json([
@@ -291,8 +281,7 @@ class ProductController extends Controller
             'total_stock_value' => Product::sum(DB::raw('purchase_price * stock')),
             'low_stock_count' => Product::where('stock', '<', 5)->count(),
             'out_of_stock_count' => Product::where('stock', '=', 0)->count(),
-            'total_quantity_purchased' => Product::sum('quantity'),
-            'total_quantity_sold' => Product::sum(DB::raw('quantity - stock')),
+            'total_quantity_purchased' => Product::sum('stock'), // = total_stock
         ]);
     }
 }
