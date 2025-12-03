@@ -168,7 +168,7 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
     Route::get('/dashboard/low-stock', function () {
         try {
             $lowStockProducts = [];
-            
+
             if (class_exists(Product::class)) {
                 $lowStockProducts = Product::where('stock', '<', 10)
                     ->orderBy('stock', 'asc')
@@ -178,30 +178,30 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
                         return [
                             'name' => $product->name,
                             'stock' => $product->stock,
-                            'price' => $product->price
+                            'sale_price' => $product->sale_price ?? 0  // ⚡ correction ici
                         ];
                     })->toArray();
             }
-            
-            // Si pas de données ou erreur, retourner des données de test
+
+            // Données de test si pas de produits
             if (empty($lowStockProducts)) {
                 $productNames = ['Clou 2"', 'Vis à métal', 'Ampoule LED', 'Interrupteur'];
-                
                 for ($i = 0; $i < 3; $i++) {
                     $lowStockProducts[] = [
                         'name' => $productNames[array_rand($productNames)],
                         'stock' => rand(1, 9),
-                        'price' => rand(500, 5000)
+                        'sale_price' => rand(500, 5000)  // ⚡ aussi ici
                     ];
                 }
             }
-            
+
             return response()->json($lowStockProducts);
-            
+
         } catch (\Exception $e) {
             return response()->json([]);
         }
     })->name('ajax.dashboard.low-stock');
+
 });
 
 // ======================

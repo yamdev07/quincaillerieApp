@@ -18,7 +18,7 @@ class ProductController extends Controller
         // ICI: Utilisez quantity au lieu de stock
         $totalStock = Product::sum('quantity');
         $totalValue = Product::sum(DB::raw('purchase_price * quantity'));
-        $lowStockProducts = Product::where('quantity', '<=', 5)->get();
+        $lowStockProducts = Product::where('quantity', '<=', 10)->get();
 
         return view('products.index', compact('products', 'totalStock', 'totalValue', 'lowStockProducts'));
     }
