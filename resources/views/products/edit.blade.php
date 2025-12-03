@@ -112,12 +112,12 @@
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-gray-500">Quantité en stock</p>
-                            <p class="text-xl font-bold {{ $product->quantity > 10 ? 'text-green-600' : ($product->quantity > 0 ? 'text-yellow-600' : 'text-red-600') }} mt-1">
-                                {{ $product->quantity }} unités
+                            <p class="text-sm text-gray-500">Stock disponible</p>
+                            <p class="text-xl font-bold {{ $product->stock > 10 ? 'text-green-600' : ($product->stock > 0 ? 'text-yellow-600' : 'text-red-600') }} mt-1">
+                                {{ $product->stock }} unités
                             </p>
                         </div>
-                        <div class="text-2xl {{ $product->quantity > 10 ? 'text-green-500' : ($product->quantity > 0 ? 'text-yellow-500' : 'text-red-500') }}">
+                        <div class="text-2xl {{ $product->stock > 10 ? 'text-green-500' : ($product->stock > 0 ? 'text-yellow-500' : 'text-red-500') }}">
                             <i class="bi bi-box-seam"></i>
                         </div>
                     </div>
@@ -128,7 +128,7 @@
                         <div>
                             <p class="text-sm text-gray-500">Valeur du stock</p>
                             <p class="text-xl font-bold text-gray-800 mt-1">
-                                {{ number_format($product->sale_price * $product->quantity, 0, ',', ' ') }} CFA
+                                {{ number_format($product->sale_price * $product->stock, 0, ',', ' ') }} CFA
                             </p>
                         </div>
                         <div class="text-2xl text-purple-500">
@@ -243,21 +243,21 @@
                         </div>
                     </div>
 
-                    <!-- Quantité en stock (CHANGÉ DE stock À quantity) -->
+                    <!-- Stock disponible (SEUL CHAMP) -->
                     <div class="relative">
-                        <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="bi bi-boxes mr-2"></i>Quantité en stock
+                        <label for="stock" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="bi bi-boxes mr-2"></i>Stock disponible
                         </label>
                         <div class="relative">
-                            <input type="number" id="quantity" name="quantity" min="0" 
-                                   value="{{ old('quantity', $product->quantity) }}"
+                            <input type="number" id="stock" name="stock" min="0" 
+                                   value="{{ old('stock', $product->stock) }}"
                                    class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 animated-input"
                                    placeholder="0" required>
                             <div class="input-icon">
                                 <i class="bi bi-boxes"></i>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Nombre d'unités disponibles</p>
+                        <p class="text-xs text-gray-500 mt-1">Nombre d'unités disponibles pour la vente</p>
                     </div>
 
                     <!-- Catégorie -->
@@ -408,9 +408,9 @@
                                 </div>
                             </div>
                             <div>
-                                <span class="text-sm text-gray-500">Quantité :</span>
-                                <p id="previewQuantity" class="font-medium {{ $product->quantity > 10 ? 'text-green-600' : ($product->quantity > 0 ? 'text-yellow-600' : 'text-red-600') }}">
-                                    {{ $product->quantity }} unités
+                                <span class="text-sm text-gray-500">Stock disponible :</span>
+                                <p id="previewStock" class="font-medium {{ $product->stock > 10 ? 'text-green-600' : ($product->stock > 0 ? 'text-yellow-600' : 'text-red-600') }}">
+                                    {{ $product->stock }} unités
                                 </p>
                             </div>
                         </div>
@@ -454,10 +454,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('previewPurchase').textContent = formatCurrency(document.getElementById('purchase_price').value) + ' CFA';
         document.getElementById('previewSale').textContent = formatCurrency(document.getElementById('sale_price').value) + ' CFA';
         
-        const quantity = parseInt(document.getElementById('quantity').value) || 0; // CHANGÉ DE stock À quantity
-        const quantityElement = document.getElementById('previewQuantity'); // CHANGÉ DE previewStock À previewQuantity
-        quantityElement.textContent = quantity + ' unités';
-        quantityElement.className = 'font-medium ' + (quantity > 10 ? 'text-green-600' : (quantity > 0 ? 'text-yellow-600' : 'text-red-600'));
+        // STOCK DISPONIBLE (seul champ)
+        const stock = parseInt(document.getElementById('stock').value) || 0;
+        const stockElement = document.getElementById('previewStock');
+        stockElement.textContent = stock + ' unités';
+        stockElement.className = 'font-medium ' + (stock > 10 ? 'text-green-600' : (stock > 0 ? 'text-yellow-600' : 'text-red-600'));
         
         const categorySelect = document.getElementById('category_id');
         const categoryText = categorySelect.options[categorySelect.selectedIndex]?.text || 'Non définie';
@@ -507,8 +508,8 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     };
     
-    // Écouter les changements sur tous les champs (CHANGÉ stock À quantity)
-    const inputs = ['name', 'purchase_price', 'sale_price', 'quantity', 'category_id', 'supplier_id', 'description'];
+    // Écouter les changements sur tous les champs
+    const inputs = ['name', 'purchase_price', 'sale_price', 'stock', 'category_id', 'supplier_id', 'description'];
     inputs.forEach(inputId => {
         const input = document.getElementById(inputId);
         if (input) {
@@ -540,7 +541,7 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('input', calculateAndDisplayMargin);
     });
     
-    // Confirmation avant envoi (CHANGÉ stock À quantity)
+    // Confirmation avant envoi
     document.querySelector('form')?.addEventListener('submit', function(e) {
         const purchasePrice = parseFloat(document.getElementById('purchase_price').value) || 0;
         const salePrice = parseFloat(document.getElementById('sale_price').value) || 0;
@@ -552,9 +553,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        const quantity = parseInt(document.getElementById('quantity').value) || 0; // CHANGÉ DE stock À quantity
-        if (quantity < 0) {
-            alert('❌ La quantité en stock ne peut pas être négative.');
+        const stock = parseInt(document.getElementById('stock').value) || 0;
+        if (stock < 0) {
+            alert('❌ Le stock disponible ne peut pas être négatif.');
             e.preventDefault();
             return false;
         }
