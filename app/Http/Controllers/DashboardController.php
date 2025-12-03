@@ -79,7 +79,7 @@ class DashboardController extends Controller
         $lowSalesAlert = $salesToday < $dailyTarget;
 
         // Retour vue
-        return view('dashboard.index', compact(
+        return view('dashboard', compact(
             'salesToday',
             'totalRevenue',
             'totalRevenueAll',
