@@ -188,7 +188,7 @@ class ProductController extends Controller
         $reportData = [
             'total_products' => $products->count(),
             'total_stock_value' => $products->sum(fn($p) => $p->stock * $p->purchase_price),
-            'low_stock' => $products->where('stock', '<', 5)->count(),
+            'low_stock' => $products->where('stock', '<', 10)->count(),
             'out_of_stock' => $products->where('stock', '=', 0)->count(),
             'total_purchased' => $products->sum('stock'), // Maintenant = total_stock
             'total_sold' => 0, // Pas de calcul de vente séparé
