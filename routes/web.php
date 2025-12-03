@@ -17,21 +17,8 @@ use App\Models\Client;
 // Route de test
 Route::view('/welcome', 'welcome');
 
-// Tableau de bord principal
-Route::get('/', [SaleController::class, 'dashboard'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
-
-// Profil utilisateur
-Route::view('/profile', 'profile')
-    ->middleware(['auth'])
-    ->name('profile');
-
-// Auth routes
-require __DIR__ . '/auth.php';
-
 // ======================
-// Routes AJAX pour le dashboard (AJOUTEZ ÇA ICI)
+// Routes AJAX pour le dashboard
 // ======================
 Route::middleware(['auth'])->prefix('ajax')->group(function () {
     
@@ -168,7 +155,7 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
     Route::get('/dashboard/low-stock', function () {
         try {
             $lowStockProducts = [];
-            
+
             if (class_exists(Product::class)) {
                 $lowStockProducts = Product::where('stock', '<', 10)
                     ->orderBy('stock', 'asc')
@@ -178,30 +165,30 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
                         return [
                             'name' => $product->name,
                             'stock' => $product->stock,
-                            'price' => $product->price
+                            'sale_price' => $product->sale_price ?? 0
                         ];
                     })->toArray();
             }
-            
-            // Si pas de données ou erreur, retourner des données de test
+
+            // Données de test si pas de produits
             if (empty($lowStockProducts)) {
                 $productNames = ['Clou 2"', 'Vis à métal', 'Ampoule LED', 'Interrupteur'];
-                
                 for ($i = 0; $i < 3; $i++) {
                     $lowStockProducts[] = [
                         'name' => $productNames[array_rand($productNames)],
                         'stock' => rand(1, 9),
-                        'price' => rand(500, 5000)
+                        'sale_price' => rand(500, 5000)
                     ];
                 }
             }
-            
+
             return response()->json($lowStockProducts);
-            
+
         } catch (\Exception $e) {
             return response()->json([]);
         }
     })->name('ajax.dashboard.low-stock');
+
 });
 
 // ======================
@@ -210,7 +197,13 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
 Route::middleware(['auth'])->group(function () {
 
     // ----------------------
-    // VENTES
+    // TABLEAU DE BORD PRINCIPAL
+    // ----------------------
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.alt');
+
+    // ----------------------
+    // VENTES (avec invoice)
     // ----------------------
     Route::prefix('sales')->group(function () {
         Route::get('/', [SaleController::class, 'index'])->name('sales.index');
@@ -220,7 +213,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{sale}/edit', [SaleController::class, 'edit'])->name('sales.edit');
         Route::put('/{sale}', [SaleController::class, 'update'])->name('sales.update');
         Route::delete('/{sale}', [SaleController::class, 'destroy'])->name('sales.destroy');
-        Route::get('/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
+        Route::get('/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice'); // ⚡ AJOUTÉ ICI
         Route::post('/{sale}/status', [SaleController::class, 'updateStatus'])->name('sales.status');
     });
 
@@ -290,6 +283,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/recent-sales', [SaleController::class, 'recentSales'])->name('api.recent.sales');
         Route::get('/top-products', [ProductController::class, 'topProducts'])->name('api.top.products');
     });
+    
+    // ----------------------
+    // PROFIL UTILISATEUR
+    // ----------------------
+    Route::get('/profile', function () {
+        return view('profile');
+    })->name('profile');
 });
 
 // ======================
@@ -337,7 +337,5 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function 
     });
 });
 
-// Dashboard sécurisé
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware('auth')
-    ->name('adashboard');
+// Auth routes
+require __DIR__ . '/auth.php';

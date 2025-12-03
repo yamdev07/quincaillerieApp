@@ -38,38 +38,124 @@
 
         <!-- Barre de Recherche -->
         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
-            <div class="relative">
-                <div class="flex items-center gap-4">
-                    <div class="relative flex-1">
-                        <i class="bi bi-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            placeholder="Rechercher un produit par nom, ID, prix ou stock..." 
-                            class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
-                        >
+            <!-- CORRECTION : Changement de route de products.search à products.index -->
+            <form action="{{ route('products.index') }}" method="GET" id="searchForm">
+                <div class="relative">
+                    <div class="flex items-center gap-4">
+                        <div class="relative flex-1">
+                            <i class="bi bi-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input 
+                                type="text" 
+                                name="search" 
+                                id="searchInput" 
+                                value="{{ request('search', '') }}" 
+                                placeholder="Rechercher un produit par nom, prix ou stock..." 
+                                class="w-full pl-12 pr-10 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
+                                autocomplete="off"
+                            >
+                            @if(request('search'))
+                                <button 
+                                    type="button" 
+                                    id="clearSearch" 
+                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    onclick="clearSearch()"
+                                >
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            @endif
+                        </div>
                         <button 
-                            id="clearSearch" 
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden"
+                            type="submit"
+                            id="searchButton"
+                            class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
                         >
-                            <i class="bi bi-x-lg"></i>
+                            <i class="bi bi-search"></i>
+                            <span>Rechercher</span>
                         </button>
                     </div>
-                    <button 
-                        id="searchButton"
-                        class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3.5 px-6 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
-                    >
-                        <i class="bi bi-search"></i>
-                        <span>Rechercher</span>
-                    </button>
+                    
+                    <!-- Filtres rapides -->
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <a href="{{ route('products.index') }}" 
+                           class="px-4 py-2 rounded-lg {{ !request('filter') && !request('search') ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                            Tous les produits
+                        </a>
+                        <a href="{{ route('products.index', ['filter' => 'low_stock']) }}" 
+                           class="px-4 py-2 rounded-lg {{ request('filter') == 'low_stock' ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                            <i class="bi bi-exclamation-triangle mr-1"></i> Stock faible (≤ 10)
+                        </a>
+                        <a href="{{ route('products.index', ['filter' => 'out_of_stock']) }}" 
+                           class="px-4 py-2 rounded-lg {{ request('filter') == 'out_of_stock' ? 'bg-orange-100 text-orange-800 border border-orange-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                            <i class="bi bi-x-circle mr-1"></i> Rupture de stock
+                        </a>
+                        <a href="{{ route('products.index', ['filter' => 'available']) }}" 
+                           class="px-4 py-2 rounded-lg {{ request('filter') == 'available' ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                            <i class="bi bi-check-circle mr-1"></i> Disponibles
+                        </a>
+                        
+                        <!-- Tri -->
+                        <select name="sort_by" 
+                                onchange="this.form.submit()" 
+                                class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 border-0 focus:ring-0">
+                            <option value="created_at" {{ request('sort_by') == 'created_at' ? 'selected' : '' }}>Tri par date</option>
+                            <option value="name" {{ request('sort_by') == 'name' ? 'selected' : '' }}>Nom (A-Z)</option>
+                            <option value="stock" {{ request('sort_by') == 'stock' ? 'selected' : '' }}>Stock (croissant)</option>
+                            <option value="sale_price" {{ request('sort_by') == 'sale_price' ? 'selected' : '' }}>Prix (croissant)</option>
+                        </select>
+                        
+                        <!-- Bouton Reset -->
+                        @if(request('search') || request('filter') || request('sort_by') != 'created_at')
+                            <a href="{{ route('products.index') }}" 
+                               class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 flex items-center gap-1">
+                                <i class="bi bi-x-circle"></i>
+                                Réinitialiser
+                            </a>
+                        @endif
+                    </div>
+                    
+                    <!-- Info de recherche -->
+                    @if(request('search') || request('filter') || request('sort_by') != 'created_at')
+                        <div class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="bi bi-info-circle text-blue-500"></i>
+                                    <span class="text-sm text-blue-700">
+                                        @if(request('search'))
+                                            Recherche : "<strong>{{ request('search') }}</strong>" • 
+                                        @endif
+                                        @if(request('filter'))
+                                            @php
+                                                $filterLabels = [
+                                                    'low_stock' => 'Stock faible (≤ 10)',
+                                                    'out_of_stock' => 'Rupture de stock',
+                                                    'available' => 'Disponibles'
+                                                ];
+                                            @endphp
+                                            Filtre : <strong>{{ $filterLabels[request('filter')] ?? request('filter') }}</strong> • 
+                                        @endif
+                                        @if(request('sort_by') != 'created_at')
+                                            @php
+                                                $sortLabels = [
+                                                    'name' => 'Nom (A-Z)',
+                                                    'stock' => 'Stock (croissant)',
+                                                    'sale_price' => 'Prix (croissant)'
+                                                ];
+                                            @endphp
+                                            Tri : <strong>{{ $sortLabels[request('sort_by')] ?? request('sort_by') }}</strong> • 
+                                        @endif
+                                        {{ $products->total() }} résultat(s) trouvé(s)
+                                    </span>
+                                </div>
+                                <a href="{{ route('products.index') }}" 
+                                   class="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1">
+                                    <i class="bi bi-x-circle"></i>
+                                    Effacer
+                                </a>
+                            </div>
+                        </div>
+                    @endif
                 </div>
-                <div class="mt-4 flex flex-wrap gap-2">
-                    <span class="text-sm text-gray-500 flex items-center gap-1">
-                        <i class="bi bi-info-circle"></i>
-                        Recherchez par : nom, ID, prix, stock
-                    </span>
-                </div>
-            </div>
+            </form>
         </div>
 
         <!-- Success Alert -->
@@ -94,7 +180,14 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-100 text-sm font-medium">Total produits</p>
-                        <h3 id="totalProducts" class="text-3xl font-bold mt-1">{{ $products->total() }}</h3>
+                        <h3 class="text-3xl font-bold mt-1">{{ $products->total() }}</h3>
+                        <p class="text-xs text-blue-100 mt-1">
+                            @if(request('search') || request('filter'))
+                                (Filtrés)
+                            @else
+                                (Tous)
+                            @endif
+                        </p>
                     </div>
                     <div class="bg-white/20 rounded-full p-3">
                         <i class="bi bi-box-seam text-3xl"></i>
@@ -106,7 +199,14 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-green-100 text-sm font-medium">Stock disponible</p>
-                        <h3 id="totalStock" class="text-3xl font-bold mt-1">{{ $totalStock }}</h3>
+                        <h3 class="text-3xl font-bold mt-1">{{ $totalStock }}</h3>
+                        <p class="text-xs text-green-100 mt-1">
+                            @if(request('search') || request('filter'))
+                                (Filtrés)
+                            @else
+                                (Total)
+                            @endif
+                        </p>
                     </div>
                     <div class="bg-white/20 rounded-full p-3">
                         <i class="bi bi-stack text-3xl"></i>
@@ -118,8 +218,11 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-purple-100 text-sm font-medium">Valeur totale</p>
-                        <h3 id="totalValue" class="text-3xl font-bold mt-1">{{ number_format($products->sum(fn($p) => $p->price * $p->stock), 0, ',', ' ') }}</h3>
-                        <p class="text-xs text-purple-100 mt-1">CFA</p>
+                            <h3 class="text-3xl font-bold mt-1">{{ number_format($totalValue ?? 0, 0, ',', ' ') }}</h3>                        <p class="text-xs text-purple-100 mt-1">CFA 
+                            @if(request('search') || request('filter'))
+                                (Filtrés)
+                            @endif
+                        </p>
                     </div>
                     <div class="bg-white/20 rounded-full p-3">
                         <i class="bi bi-currency-exchange text-3xl"></i>
@@ -145,13 +248,9 @@
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-100 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($products as $product)
-                            <tr class="product-row hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent transition-all duration-200 group" 
-                                data-id="{{ $product->id }}"
-                                data-name="{{ strtolower($product->name ?? '') }}"
-                                data-price="{{ $product->price ?? 0 }}"
-                                data-stock="{{ $product->stock ?? 0 }}">
+                            <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent transition-all duration-200 group">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-semibold text-sm group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
                                         {{ $product->id ?? 'N/A' }}
@@ -168,14 +267,12 @@
                                         </div>
                                     </div>
                                 </td>
-                                <!-- Prix de vente -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
-                                        <span class="text-lg font-bold text-gray-800">{{ isset($product->price) ? number_format($product->price, 0, ',', ' ') : '0' }}</span>
+                                        <span class="text-lg font-bold text-gray-800">{{ isset($product->sale_price) ? number_format($product->sale_price, 0, ',', ' ') : '0' }}</span>
                                         <span class="text-xs text-gray-500">CFA</span>
                                     </div>
                                 </td>
-                                <!-- Prix d'achat (admin seulement) -->
                                 @if(Auth::user() && Auth::user()->role === 'admin')
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex flex-col">
@@ -236,18 +333,38 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr id="noResultsRow">
+                            <tr>
                                 <td colspan="7" class="px-6 py-16 text-center">
                                     <div class="flex flex-col items-center justify-center">
                                         <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                             <i class="bi bi-box-seam text-5xl text-gray-400"></i>
                                         </div>
-                                        <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucun produit trouvé</h3>
-                                        <p class="text-gray-500 mb-6">Commencez par créer votre premier produit</p>
-                                        <a href="{{ route('products.create') }}" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 inline-flex items-center gap-2">
-                                            <i class="bi bi-plus-circle"></i>
-                                            <span>Créer le premier produit</span>
-                                        </a>
+                                        <h3 class="text-xl font-semibold text-gray-700 mb-2">
+                                            @if(request('search') || request('filter'))
+                                                Aucun produit ne correspond à vos critères
+                                            @else
+                                                Aucun produit trouvé
+                                            @endif
+                                        </h3>
+                                        <p class="text-gray-500 mb-6">
+                                            @if(request('search') || request('filter'))
+                                                Essayez de modifier vos critères de recherche
+                                            @else
+                                                Commencez par créer votre premier produit
+                                            @endif
+                                        </p>
+                                        @if(request('search') || request('filter'))
+                                            <a href="{{ route('products.index') }}" 
+                                               class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 inline-flex items-center gap-2">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                                <span>Voir tous les produits</span>
+                                            </a>
+                                        @else
+                                            <a href="{{ route('products.create') }}" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 inline-flex items-center gap-2">
+                                                <i class="bi bi-plus-circle"></i>
+                                                <span>Créer le premier produit</span>
+                                            </a>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -257,24 +374,30 @@
             </div>
         </div>
 
-        <!-- Message Aucun résultat -->
-        <div id="noResultsMessage" class="hidden bg-white rounded-2xl shadow-xl p-8 text-center border border-gray-100 mt-6">
-            <div class="flex flex-col items-center justify-center">
-                <div class="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
-                    <i class="bi bi-search text-3xl text-gray-400"></i>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-700 mb-2">Aucun résultat trouvé</h3>
-                <p class="text-gray-500 mb-4">Aucun produit ne correspond à votre recherche.</p>
-                <button id="clearSearchBtn" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 inline-flex items-center gap-2">
-                    <i class="bi bi-x-circle"></i>
-                    <span>Effacer la recherche</span>
-                </button>
-            </div>
-        </div>
-
         <!-- Pagination -->
         <div id="paginationContainer" class="mt-6 bg-white rounded-xl shadow-md p-4">
-            {{ $products->links() }}
+            @if($products->hasPages())
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="text-sm text-gray-600">
+                        Page {{ $products->currentPage() }} sur {{ $products->lastPage() }} • 
+                        {{ $products->total() }} produit(s) au total
+                        @if(request('search'))
+                            • Recherche : "{{ request('search') }}"
+                        @endif
+                    </div>
+                    <div class="pagination">
+                        {{ $products->appends(request()->except('page'))->links() }}
+                    </div>
+                </div>
+            @else
+                <div class="text-center text-gray-500 py-2">
+                    @if($products->count() > 0)
+                        Tous les produits sont affichés
+                    @else
+                        Aucun produit à afficher
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -291,179 +414,94 @@
     }
 }
 
-@keyframes fade-out {
-    from {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    to {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-}
-
 .animate-fade-in {
     animation: fade-in 0.3s ease-out;
 }
 
-.animate-fade-out {
-    animation: fade-out 0.3s ease-out;
+.mark {
+    background-color: rgba(255, 230, 0, 0.3);
+    padding: 0.1em 0.2em;
+    border-radius: 0.25em;
 }
 
-.product-row {
-    transition: all 0.3s ease;
+.highlight {
+    background-color: rgba(255, 230, 0, 0.5);
+    transition: background-color 0.3s ease;
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
-    const searchButton = document.getElementById('searchButton');
-    const clearSearch = document.getElementById('clearSearch');
-    const clearSearchBtn = document.getElementById('clearSearchBtn');
-    const productsTableBody = document.getElementById('productsTableBody');
-    const noResultsMessage = document.getElementById('noResultsMessage');
-    const noResultsRow = document.getElementById('noResultsRow');
-    const paginationContainer = document.getElementById('paginationContainer');
-    const totalProductsElement = document.getElementById('totalProducts');
-    const totalStockElement = document.getElementById('totalStock');
-    const totalValueElement = document.getElementById('totalValue');
+    const searchForm = document.getElementById('searchForm');
+    const clearSearchBtn = document.getElementById('clearSearch');
     
-    // Initialiser les valeurs
-    let originalRows = Array.from(document.querySelectorAll('.product-row'));
-    let currentRows = [...originalRows];
-
-    // Fonction de recherche
-    function performSearch() {
-        const searchTerm = searchInput.value.trim().toLowerCase();
-        
-        if (searchTerm === '') {
-            clearSearch.classList.add('hidden');
-            showAllRows();
-            updateStats();
-            return;
-        }
-        
-        clearSearch.classList.remove('hidden');
-        
-        // Filtrer les lignes
-        const filteredRows = originalRows.filter(row => {
-            const id = row.getAttribute('data-id') || '';
-            const name = row.getAttribute('data-name') || '';
-            const price = row.getAttribute('data-price') || '';
-            const stock = row.getAttribute('data-stock') || '';
-            
-            return id.includes(searchTerm) || 
-                   name.includes(searchTerm) || 
-                   price.includes(searchTerm) || 
-                   stock.includes(searchTerm);
-        });
-        
-        currentRows = filteredRows;
-        displayFilteredRows(filteredRows);
-        updateStats();
-    }
+    // Recherche avec délai (optionnel)
+    let searchTimeout;
     
-    // Afficher les lignes filtrées
-    function displayFilteredRows(rows) {
-        // Masquer toutes les lignes
-        originalRows.forEach(row => {
-            row.style.display = 'none';
-            row.classList.add('animate-fade-out');
-        });
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
         
-        // Masquer la ligne "aucun résultat" initiale si elle existe
-        if (noResultsRow) {
-            noResultsRow.style.display = 'none';
-        }
-        
-        // Masquer la pagination
-        paginationContainer.style.display = 'none';
-        
-        // Afficher les lignes filtrées
-        if (rows.length > 0) {
-            rows.forEach(row => {
-                row.style.display = '';
-                row.classList.remove('animate-fade-out');
-                row.classList.add('animate-fade-in');
-            });
-            noResultsMessage.classList.add('hidden');
-        } else {
-            noResultsMessage.classList.remove('hidden');
-            noResultsMessage.classList.add('animate-fade-in');
-        }
-    }
-    
-    // Afficher toutes les lignes
-    function showAllRows() {
-        originalRows.forEach(row => {
-            row.style.display = '';
-            row.classList.remove('animate-fade-out');
-            row.classList.add('animate-fade-in');
-        });
-        
-        // Réafficher la ligne "aucun résultat" initiale si nécessaire
-        if (noResultsRow && originalRows.length === 0) {
-            noResultsRow.style.display = '';
-        }
-        
-        // Réafficher la pagination
-        paginationContainer.style.display = 'block';
-        
-        // Masquer le message "aucun résultat"
-        noResultsMessage.classList.add('hidden');
-    }
-    
-    // Mettre à jour les statistiques
-    function updateStats() {
-        let totalProducts = 0;
-        let totalStock = 0;
-        let totalValue = 0;
-        
-        currentRows.forEach(row => {
-            if (row.style.display !== 'none') {
-                totalProducts++;
-                const stock = parseInt(row.getAttribute('data-stock')) || 0;
-                const price = parseInt(row.getAttribute('data-price')) || 0;
-                totalStock += stock;
-                totalValue += stock * price;
-            }
-        });
-        
-        totalProductsElement.textContent = totalProducts;
-        totalStockElement.textContent = totalStock;
-        totalValueElement.textContent = totalValue.toLocaleString('fr-FR');
-    }
-    
-    // Événements
-    searchButton.addEventListener('click', performSearch);
-    
-    searchInput.addEventListener('keyup', function(event) {
-        if (event.key === 'Enter') {
-            performSearch();
-        }
-        performSearch(); // Recherche en temps réel
+        // Si recherche à la frappe activée (optionnel)
+        // searchTimeout = setTimeout(() => {
+        //     if (this.value.length >= 2 || this.value.length === 0) {
+        //         searchForm.submit();
+        //     }
+        // }, 500);
     });
     
-    clearSearch.addEventListener('click', function() {
-        searchInput.value = '';
-        clearSearch.classList.add('hidden');
-        showAllRows();
-        updateStats();
-        searchInput.focus();
+    // Empêcher l'envoi si moins de 2 caractères (optionnel)
+    searchForm.addEventListener('submit', function(e) {
+        const searchValue = searchInput.value.trim();
+        
+        // Si on veut exiger au moins 2 caractères
+        // if (searchValue.length > 0 && searchValue.length < 2) {
+        //     e.preventDefault();
+        //     alert('Veuillez saisir au moins 2 caractères pour la recherche.');
+        //     searchInput.focus();
+        //     return;
+        // }
+        
+        // Ajouter un indicateur de chargement
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalHtml = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split animate-spin"></i> Recherche...';
+        submitBtn.disabled = true;
+        
+        // Réinitialiser après 2 secondes (sécurité)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalHtml;
+            submitBtn.disabled = false;
+        }, 2000);
     });
     
-    clearSearchBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        clearSearch.classList.add('hidden');
-        showAllRows();
-        updateStats();
-        searchInput.focus();
+    // Fonction pour effacer la recherche
+    window.clearSearch = function() {
+        window.location.href = "{{ route('products.index') }}";
+    };
+    
+    // Touche Échap pour effacer
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && searchInput.value) {
+            window.clearSearch();
+        }
     });
     
-    // Recherche initiale si l'input a déjà une valeur (après F5 par exemple)
-    if (searchInput.value.trim() !== '') {
-        performSearch();
+    // Mettre en évidence les résultats de recherche
+    const searchTerm = "{{ request('search', '') }}";
+    if (searchTerm) {
+        highlightSearchResults(searchTerm);
+    }
+    
+    function highlightSearchResults(term) {
+        const elements = document.querySelectorAll('td:not(:last-child)');
+        const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        
+        elements.forEach(element => {
+            const originalHtml = element.innerHTML;
+            const highlighted = originalHtml.replace(regex, '<mark class="bg-yellow-200 text-gray-800 px-1 rounded">$1</mark>');
+            element.innerHTML = highlighted;
+        });
     }
 });
 </script>

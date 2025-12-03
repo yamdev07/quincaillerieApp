@@ -97,58 +97,81 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($sales as $sale)
                             <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent transition-all duration-200 group">
+                                <!-- ID -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-semibold text-sm group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
                                         {{ $sale->id }}
                                     </span>
                                 </td>
+
+                                <!-- Produits -->
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-md">
-                                            {{ substr($sale->product->name, 0, 1) }}
+                                    @foreach($sale->items as $item)
+                                        <div class="flex items-center gap-3 mb-1">
+                                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-md">
+                                                {{ substr($item->product?->name ?? 'X', 0, 1) }}
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-gray-800">{{ $item->product?->name ?? 'Produit supprimé' }}</p>
+                                                <p class="text-xs text-gray-500">Produit #{{ $item->product_id }}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p class="font-semibold text-gray-800">{{ $sale->product->name }}</p>
-                                            <p class="text-xs text-gray-500">Produit #{{ $sale->product->id }}</p>
-                                        </div>
-                                    </div>
+                                    @endforeach
                                 </td>
+
+                                <!-- Client -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-2">
                                         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold">
-                                            {{ substr($sale->client ? $sale->client->name : 'Inconnu', 0, 1) }}
+                                            {{ substr($sale->client?->name ?? 'X', 0, 1) }}
                                         </div>
-                                        <span class="font-medium text-gray-700">{{ $sale->client ? $sale->client->name : 'Client inconnu' }}</span>
+                                        <span class="font-medium text-gray-700">{{ $sale->client?->name ?? 'Client inconnu' }}</span>
                                     </div>
                                 </td>
+
+                                <!-- Quantité totale -->
                                 <td class="px-6 py-4 whitespace-nowrap">
+                                    @php
+                                        $totalQuantity = $sale->items->sum('quantity');
+                                    @endphp
                                     <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-blue-800 text-sm font-semibold border border-blue-200">
                                         <i class="bi bi-box-seam text-xs"></i>
-                                        {{ $sale->quantity }}
+                                        {{ $totalQuantity }}
                                     </span>
                                 </td>
+
+                                <!-- Prix d'achat (admin) -->
                                 @can('admin')
                                     <td class="px-6 py-4 whitespace-nowrap">
+                                        @php
+                                            $totalPurchasePrice = $sale->items->sum(fn($item) => $item->unit_price * $item->quantity);
+                                        @endphp
                                         <div class="flex flex-col">
-                                            <span class="text-gray-800 font-semibold">{{ number_format($sale->purchase_price, 0, ',', ' ') }}</span>
+                                            <span class="text-gray-800 font-semibold">{{ number_format($totalPurchasePrice, 0, ',', ' ') }}</span>
                                             <span class="text-xs text-gray-500">FCFA</span>
                                         </div>
                                     </td>
                                 @endcan
+
+                                <!-- Total vente -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
                                         <span class="text-lg font-bold text-gray-800">{{ number_format($sale->total_price, 0, ',', ' ') }}</span>
                                         <span class="text-xs text-gray-500">FCFA</span>
                                     </div>
                                 </td>
+
+                                <!-- Caissier -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-2">
                                         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
-                                            {{ substr($sale->user->name, 0, 1) }}
+                                            {{ substr($sale->user?->name ?? 'X', 0, 1) }}
                                         </div>
-                                        <span class="text-gray-700">{{ $sale->user->name }}</span>
+                                        <span class="text-gray-700">{{ $sale->user?->name ?? 'Utilisateur inconnu' }}</span>
                                     </div>
                                 </td>
+
+                                <!-- Date -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
                                         <div class="flex items-center gap-2 text-sm text-gray-600">
@@ -161,24 +184,43 @@
                                         </div>
                                     </div>
                                 </td>
+
+                                <!-- Actions -->
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center justify-center gap-2">
-                                        <a href="{{ route('sales.show', $sale->id) }}" class="inline-flex items-center justify-center w-9 h-9 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" title="Voir détails">
+                                        <a href="{{ route('sales.show', $sale->id) }}" 
+                                           class="inline-flex items-center justify-center w-9 h-9 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" 
+                                           title="Voir détails">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <form action="{{ route('sales.destroy', $sale->id) }}" method="POST" onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer cette vente ?')" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center justify-center w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" title="Supprimer">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
+                                        
+                                        @can('admin')
+                                            <form action="{{ route('sales.destroy', $sale->id) }}" 
+                                                  method="POST" 
+                                                  onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer cette vente ?')" 
+                                                  class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" 
+                                                        class="inline-flex items-center justify-center w-9 h-9 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" 
+                                                        title="Supprimer">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endcan
+                                        
+                                        <!-- Option: Ajouter un bouton d'impression/facture -->
+                                        <a href="{{ route('sales.invoice', $sale->id) }}" 
+                                           class="inline-flex items-center justify-center w-9 h-9 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200" 
+                                           title="Imprimer facture">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-16 text-center">
+                                <td colspan="9" class="px-6 py-16 text-center">
                                     <div class="flex flex-col items-center justify-center">
                                         <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                             <i class="bi bi-receipt text-5xl text-gray-400"></i>

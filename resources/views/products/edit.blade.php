@@ -112,7 +112,7 @@
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-gray-500">Stock actuel</p>
+                            <p class="text-sm text-gray-500">Stock disponible</p>
                             <p class="text-xl font-bold {{ $product->stock > 10 ? 'text-green-600' : ($product->stock > 0 ? 'text-yellow-600' : 'text-red-600') }} mt-1">
                                 {{ $product->stock }} unités
                             </p>
@@ -243,10 +243,10 @@
                         </div>
                     </div>
 
-                    <!-- Stock -->
+                    <!-- Stock disponible (SEUL CHAMP) -->
                     <div class="relative">
                         <label for="stock" class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="bi bi-boxes mr-2"></i>Quantité en stock
+                            <i class="bi bi-boxes mr-2"></i>Stock disponible
                         </label>
                         <div class="relative">
                             <input type="number" id="stock" name="stock" min="0" 
@@ -257,7 +257,7 @@
                                 <i class="bi bi-boxes"></i>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Nombre d'unités disponibles</p>
+                        <p class="text-xs text-gray-500 mt-1">Nombre d'unités disponibles pour la vente</p>
                     </div>
 
                     <!-- Catégorie -->
@@ -408,7 +408,7 @@
                                 </div>
                             </div>
                             <div>
-                                <span class="text-sm text-gray-500">Stock :</span>
+                                <span class="text-sm text-gray-500">Stock disponible :</span>
                                 <p id="previewStock" class="font-medium {{ $product->stock > 10 ? 'text-green-600' : ($product->stock > 0 ? 'text-yellow-600' : 'text-red-600') }}">
                                     {{ $product->stock }} unités
                                 </p>
@@ -454,6 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('previewPurchase').textContent = formatCurrency(document.getElementById('purchase_price').value) + ' CFA';
         document.getElementById('previewSale').textContent = formatCurrency(document.getElementById('sale_price').value) + ' CFA';
         
+        // STOCK DISPONIBLE (seul champ)
         const stock = parseInt(document.getElementById('stock').value) || 0;
         const stockElement = document.getElementById('previewStock');
         stockElement.textContent = stock + ' unités';
@@ -554,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const stock = parseInt(document.getElementById('stock').value) || 0;
         if (stock < 0) {
-            alert('❌ La quantité en stock ne peut pas être négative.');
+            alert('❌ Le stock disponible ne peut pas être négatif.');
             e.preventDefault();
             return false;
         }

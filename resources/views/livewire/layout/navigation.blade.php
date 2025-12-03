@@ -39,7 +39,7 @@ new class extends Component
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden space-x-2 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate 
                         class="px-4 py-2.5 rounded-lg hover:bg-white/10 transition-all duration-200 group">
                         <div class="flex items-center gap-2">
@@ -47,6 +47,61 @@ new class extends Component
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                             </svg>
                             <span class="text-gray-300 group-hover:text-white transition-colors">{{ __('Dashboard') }}</span>
+                        </div>
+                    </x-nav-link>
+
+                    <!-- Produits -->
+                    <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')" wire:navigate 
+                        class="px-4 py-2.5 rounded-lg hover:bg-white/10 transition-all duration-200 group">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                            </svg>
+                            <span class="text-gray-300 group-hover:text-white transition-colors">Produits</span>
+                        </div>
+                    </x-nav-link>
+
+                    <!-- Fournisseurs -->
+                    <x-nav-link :href="route('suppliers.index')" :active="request()->routeIs('suppliers.*')" wire:navigate 
+                        class="px-4 py-2.5 rounded-lg hover:bg-white/10 transition-all duration-200 group">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            <span class="text-gray-300 group-hover:text-white transition-colors">Fournisseurs</span>
+                        </div>
+                    </x-nav-link>
+
+                    <!-- Catégories -->
+                    <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')" wire:navigate 
+                        class="px-4 py-2.5 rounded-lg hover:bg-white/10 transition-all duration-200 group">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <span class="text-gray-300 group-hover:text-white transition-colors">Catégories</span>
+                        </div>
+                    </x-nav-link>
+
+                    <!-- Ventes -->
+                    <x-nav-link :href="route('sales.index')" :active="request()->routeIs('sales.*')" wire:navigate 
+                        class="px-4 py-2.5 rounded-lg hover:bg-white/10 transition-all duration-200 group">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="text-gray-300 group-hover:text-white transition-colors">Ventes</span>
+                        </div>
+                    </x-nav-link>
+
+                    <!-- Clients -->
+                    <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')" wire:navigate 
+                        class="px-4 py-2.5 rounded-lg hover:bg-white/10 transition-all duration-200 group">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0c-.281.015-.559.03-.835.046m-11.665 0c-.276-.016-.554-.031-.835-.046m11.665 0a23.848 23.848 0 01-11.665 0" />
+                            </svg>
+                            <span class="text-gray-300 group-hover:text-white transition-colors">Clients</span>
                         </div>
                     </x-nav-link>
                 </div>
@@ -111,12 +166,58 @@ new class extends Component
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-gray-800 border-t border-gray-700">
         <div class="pt-2 pb-3 space-y-1 px-4">
+            <!-- Dashboard -->
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate 
                 class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
                 <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+
+            <!-- Produits -->
+            <x-responsive-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')" wire:navigate 
+                class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                </svg>
+                Produits
+            </x-responsive-nav-link>
+
+            <!-- Fournisseurs -->
+            <x-responsive-nav-link :href="route('suppliers.index')" :active="request()->routeIs('suppliers.*')" wire:navigate 
+                class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                Fournisseurs
+            </x-responsive-nav-link>
+
+            <!-- Catégories -->
+            <x-responsive-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')" wire:navigate 
+                class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Catégories
+            </x-responsive-nav-link>
+
+            <!-- Ventes -->
+            <x-responsive-nav-link :href="route('sales.index')" :active="request()->routeIs('sales.*')" wire:navigate 
+                class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Ventes
+            </x-responsive-nav-link>
+
+            <!-- Clients -->
+            <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')" wire:navigate 
+                class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0c-.281.015-.559.03-.835.046m-11.665 0c-.276-.016-.554-.031-.835-.046m11.665 0a23.848 23.848 0 01-11.665 0" />
+                </svg>
+                Clients
             </x-responsive-nav-link>
         </div>
 

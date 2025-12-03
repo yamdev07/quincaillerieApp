@@ -59,7 +59,7 @@
                                     <div>
                                         <p class="text-sm text-gray-500">Prix unitaire</p>
                                         <p class="text-2xl font-bold text-gray-800">
-                                            {{ isset($product->price) ? number_format($product->price, 0, ',', ' ') : '0' }}
+                                            {{ isset($product->sale_price) ? number_format($product->sale_price, 0, ',', ' ') : '0' }}
                                             <span class="text-sm text-gray-500">CFA</span>
                                         </p>
                                     </div>
@@ -67,7 +67,7 @@
                                 <div class="text-right">
                                     <p class="text-sm text-gray-500">Valeur totale</p>
                                     <p class="text-lg font-semibold text-gray-800">
-                                        {{ number_format(($product->price ?? 0) * ($product->stock ?? 0), 0, ',', ' ') }}
+                                        {{ number_format(($product->sale_price ?? 0) * ($product->stock ?? 0), 0, ',', ' ') }}
                                         <span class="text-sm text-gray-500">CFA</span>
                                     </p>
                                 </div>

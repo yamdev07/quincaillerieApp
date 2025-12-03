@@ -680,10 +680,18 @@
                     </thead>
                     <tbody>
                         <!-- Data will be loaded via AJAX -->
-                        @forelse($recentSales as $sale)
+                       @forelse($recentSales as $sale)
                             <tr>
-                                <td><strong>{{ $sale->product ? $sale->product->name : 'Produit inconnu' }}</strong></td>
-                                <td>{{ $sale->client ? $sale->client->name : 'Client inconnu' }}</td>
+                                <td>
+                                    @if($sale->items->count() > 0)
+                                        @foreach($sale->items as $item)
+                                            <strong>{{ $item->product->name ?? 'Produit inconnu' }}</strong>@if(!$loop->last), @endif
+                                        @endforeach
+                                    @else
+                                        Produit inconnu
+                                    @endif
+                                </td>
+                                <td>{{ $sale->client->name ?? 'Client inconnu' }}</td>
                                 <td><strong>{{ number_format($sale->total_price, 0, ',', ' ') }} FCFA</strong></td>
                                 <td>{{ $sale->created_at->format('d/m H:i') }}</td>
                             </tr>
@@ -719,7 +727,7 @@
                             <tr>
                                 <td><strong>{{ $product->name }}</strong></td>
                                 <td><span class="badge badge-low">{{ $product->stock }}</span></td>
-                                <td>{{ number_format($product->price, 0, ',', ' ') }} FCFA</td>
+                                <td>{{ number_format($product->sale_price, 0, ',', ' ') }} FCFA</td>
                             </tr>
                         @empty
                             <tr>
@@ -739,150 +747,87 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Variables globales
+/*=========================================
+=   VARIABLES GLOBALES
+=========================================*/
 let salesChart = null;
 let currentPeriod = 7;
 let isLoading = false;
 
-// Fonction pour charger les données du graphique via AJAX
+/*=========================================
+=   CHARGER DONNÉES DU GRAPHIQUE
+=========================================*/
 async function loadChartData(period = currentPeriod) {
     if (isLoading) return;
-    
+
     isLoading = true;
     currentPeriod = period;
-    
+
     const loadingElement = document.getElementById('chartLoading');
     const errorElement = document.getElementById('chartError');
-    const canvas = document.getElementById('salesChart');
-    
-    // Afficher le loader
+
     loadingElement.style.display = 'flex';
     errorElement.style.display = 'none';
-    
+
     try {
-        // Récupérer le token CSRF
-        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
-        // Faire la requête AJAX - NOTE: URL mise à jour pour web.php
         const response = await fetch(`/ajax/dashboard/chart-data?period=${period}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': token
-            }
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        
-        if (!response.ok) {
-            throw new Error('Erreur réseau: ' + response.status);
-        }
-        
+
+        if (!response.ok) throw new Error("Erreur réseau");
+
         const data = await response.json();
-        
-        // Masquer le loader
+
         loadingElement.style.display = 'none';
-        
-        // Créer ou mettre à jour le graphique
-        if (salesChart) {
-            salesChart.destroy();
-        }
-        
+
+        if (salesChart) salesChart.destroy();
         createChart(data);
-        
-    } catch (error) {
-        console.error('Erreur lors du chargement du graphique:', error);
+
+    } catch (e) {
+        console.error("Erreur graphique :", e);
         loadingElement.style.display = 'none';
         errorElement.style.display = 'flex';
-    } finally {
-        isLoading = false;
     }
+
+    isLoading = false;
 }
 
-// Fonction pour créer le graphique
+/*=========================================
+=   CRÉATION DU GRAPH
+=========================================*/
 function createChart(data) {
     const ctx = document.getElementById('salesChart').getContext('2d');
-    
-    // Configuration optimisée pour les performances
+
     salesChart = new Chart(ctx, {
-        type: 'line',
+        type: "line",
         data: {
-            labels: data.dates || [],
+            labels: data.dates ?? [],
             datasets: [{
-                label: 'Ventes (FCFA)',
-                data: data.totals || [],
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                borderWidth: 2,
+                label: "Ventes (FCFA)",
+                data: data.totals ?? [],
+                borderColor: "#2563eb",
+                backgroundColor: "rgba(37, 99, 235, 0.12)",
                 fill: true,
-                tension: 0.3,
-                pointBackgroundColor: '#2563eb',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 1,
+                tension: 0.35,
+                borderWidth: 2,
                 pointRadius: 3,
-                pointHoverRadius: 5,
+                pointHoverRadius: 5
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            animation: {
-                duration: 300,
-                easing: 'easeOutQuart'
-            },
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
-                    padding: 10,
-                    cornerRadius: 4,
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.parsed.y !== null) {
-                                label += new Intl.NumberFormat('fr-FR').format(context.parsed.y) + ' FCFA';
-                            }
-                            return label;
-                        }
-                    }
-                }
-            },
+            plugins: { legend: { display: false } },
+            interaction: { intersect: false, mode: "index" },
             scales: {
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        maxRotation: 0,
-                        autoSkip: true,
-                        maxTicksLimit: 10
-                    }
-                },
+                x: { grid: { display: false } },
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    },
                     ticks: {
-                        callback: function(value) {
-                            if (value >= 1000000) {
-                                return (value / 1000000).toFixed(1) + 'M';
-                            }
-                            if (value >= 1000) {
-                                return (value / 1000).toFixed(0) + 'k';
-                            }
-                            return value;
-                        }
+                        callback: (v) =>
+                            v >= 1_000_000 ? (v/1_000_000) + "M" :
+                            v >= 1_000 ? (v/1_000) + "k" :
+                            v
                     }
                 }
             }
@@ -890,262 +835,143 @@ function createChart(data) {
     });
 }
 
-// Fonction pour charger les statistiques via AJAX
+/*=========================================
+=   STATS AJAX
+=========================================*/
 async function loadStats() {
     try {
-        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
-        // URL mise à jour
         const response = await fetch('/ajax/dashboard/stats', {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': token
-            }
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        
-        if (response.ok) {
-            const data = await response.json();
-            
-            // Mettre à jour les statistiques
-            document.getElementById('salesToday').textContent = data.salesToday || 0;
-            
-            const revenueElement = document.getElementById('totalRevenue');
-            if (data.totalRevenue) {
-                revenueElement.textContent = data.totalRevenue.toLocaleString('fr-FR') + ' FCFA';
-            } else {
-                revenueElement.textContent = '0 FCFA';
-            }
-            
-            document.getElementById('lowStockCount').textContent = data.lowStockCount || 0;
-            document.getElementById('activeClients').textContent = data.activeClients || 0;
-            
-            const averageSaleElement = document.getElementById('averageSale');
-            if (data.averageSale) {
-                averageSaleElement.textContent = Math.round(data.averageSale).toLocaleString('fr-FR') + ' FCFA';
-            } else {
-                averageSaleElement.textContent = '0 FCFA';
-            }
-            
-            // Mettre à jour le statut du stock
-            const stockStatusElement = document.getElementById('stockStatus');
-            if (data.lowStockCount === 0) {
-                stockStatusElement.innerHTML = `
-                    <div style="color: #10b981; font-size: 2.5rem;">✓</div>
-                    <div style="color: #10b981; font-weight: 600;">Tout va bien</div>
-                `;
-            } else {
-                stockStatusElement.innerHTML = `
-                    <div style="color: #ef4444; font-size: 2.5rem;">!</div>
-                    <div style="color: #ef4444; font-weight: 600;">Attention requise</div>
-                `;
-            }
-        } else {
-            console.error('Statut HTTP:', response.status);
-        }
-    } catch (error) {
-        console.error('Erreur lors du chargement des statistiques:', error);
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        document.getElementById('salesToday').textContent = data.salesToday ?? 0;
+
+        document.getElementById('totalRevenue').textContent = 
+            data.totalRevenue 
+                ? Number(data.totalRevenue).toLocaleString("fr-FR") + " FCFA"
+                : "0 FCFA";
+
+        document.getElementById('lowStockCount').textContent = data.lowStockCount ?? 0;
+        document.getElementById('activeClients').textContent = data.activeClients ?? 0;
+
+        document.getElementById('averageSale').textContent = 
+            data.averageSale 
+                ? Math.round(data.averageSale).toLocaleString("fr-FR") + " FCFA"
+                : "0 FCFA";
+
+        // Statut du stock
+        document.getElementById('stockStatus').innerHTML =
+            data.lowStockCount == 0
+                ? `<div style="color:#10b981;font-size:2.5rem;">✓</div><div style="color:#10b981;font-weight:600;">Tout va bien</div>`
+                : `<div style="color:#ef4444;font-size:2.5rem;">!</div><div style="color:#ef4444;font-weight:600;">Attention requise</div>`;
+
+    } catch (e) {
+        console.error("Erreur stats :", e);
     }
 }
 
-// Fonction pour charger les ventes récentes via AJAX
+/*=========================================
+=   VENTES RÉCENTES AJAX
+=========================================*/
 async function loadRecentSales() {
     try {
-        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
-        // URL mise à jour
         const response = await fetch('/ajax/dashboard/recent-sales', {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': token
-            }
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        
-        if (response.ok) {
-            const data = await response.json();
-            const tbody = document.querySelector('#recentSalesTable tbody');
-            
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="text-center py-4">
-                            Aucune vente récente
-                        </td>
-                    </tr>
-                `;
-            } else {
-                tbody.innerHTML = data.map(sale => `
-                    <tr>
-                        <td><strong>${sale.product_name || 'Produit inconnu'}</strong></td>
-                        <td>${sale.client_name || 'Client inconnu'}</td>
-                        <td><strong>${parseInt(sale.total_price || 0).toLocaleString('fr-FR')} FCFA</strong></td>
-                        <td>${formatDateTime(sale.created_at)}</td>
-                    </tr>
-                `).join('');
-            }
+
+        const data = await response.json();
+        const tbody = document.querySelector('#recentSalesTable tbody');
+
+        if (!data || data.length === 0) {
+            // Garde le HTML initial si aucune donnée
+            return;
         }
-    } catch (error) {
-        console.error('Erreur lors du chargement des ventes récentes:', error);
+
+        tbody.innerHTML = data.map(sale => `
+            <tr>
+                <td><strong>${sale.product_name ?? "Produit inconnu"}</strong></td>
+                <td>${sale.client_name ?? "Client inconnu"}</td>
+                <td><strong>${Number(sale.total_price ?? 0).toLocaleString("fr-FR")} FCFA</strong></td>
+                <td>${sale.date ?? "-"}</td>
+            </tr>
+        `).join("");
+
+    } catch (e) {
+        console.error("Erreur ventes :", e);
     }
 }
 
-// Fonction pour charger le stock faible via AJAX
+/*=========================================
+=   STOCK FAIBLE AJAX
+=========================================*/
 async function loadLowStock() {
     try {
-        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
-        // URL mise à jour
         const response = await fetch('/ajax/dashboard/low-stock', {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': token
-            }
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        
-        if (response.ok) {
-            const data = await response.json();
-            const tbody = document.querySelector('#lowStockTable tbody');
-            
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="3" class="text-center py-4">
-                            Stock optimal
-                        </td>
-                    </tr>
-                `;
-            } else {
-                tbody.innerHTML = data.map(product => `
-                    <tr>
-                        <td><strong>${product.name || 'Produit inconnu'}</strong></td>
-                        <td><span class="badge badge-low">${product.stock || 0}</span></td>
-                        <td>${parseInt(product.price || 0).toLocaleString('fr-FR')} FCFA</td>
-                    </tr>
-                `).join('');
-            }
+
+        const data = await response.json();
+        const tbody = document.querySelector('#lowStockTable tbody');
+
+        if (!data || data.length === 0) {
+            // Garde le HTML initial si aucune donnée
+            return;
         }
-    } catch (error) {
-        console.error('Erreur lors du chargement du stock faible:', error);
+
+        tbody.innerHTML = data.map(product => `
+            <tr>
+                <td><strong>${product.name ?? "Produit inconnu"}</strong></td>
+                <td><span class="badge badge-low">${Number(product.stock ?? 0)}</span></td>
+                <td>${Number(product.sale_price ?? 0).toLocaleString("fr-FR")} FCFA</td>
+            </tr>
+        `).join("");
+
+    } catch (e) {
+        console.error("Erreur stock :", e);
     }
 }
 
-// Fonction utilitaire pour formater la date
-function formatDateTime(dateString) {
-    if (!dateString) return 'Date inconnue';
-    
-    try {
-        const date = new Date(dateString);
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-        
-        return `${day}/${month} ${hours}:${minutes}`;
-    } catch (error) {
-        return 'Date invalide';
+/*=========================================
+=   ONGLET TABLES
+=========================================*/
+function switchTab(tab, event) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    event.target.classList.add("active");
+
+    if (tab === "recent-sales") {
+        document.querySelector("#recentSalesTable").closest('.table-card').style.display = "block";
+        document.querySelector("#lowStockTable").closest('.table-card').style.display = "none";
+    } else {
+        document.querySelector("#recentSalesTable").closest('.table-card').style.display = "none";
+        document.querySelector("#lowStockTable").closest('.table-card').style.display = "block";
     }
 }
 
-// Fonction pour switcher entre les onglets
-function switchTab(tabName) {
-    // Mettre à jour les onglets actifs
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    
-    // Optionnel: Charger des données spécifiques à l'onglet
-    if (tabName === 'recent-sales') {
-        loadRecentSales();
-    } else if (tabName === 'low-stock') {
-        loadLowStock();
-    }
-}
+/*=========================================
+=   EVENTS & INIT
+=========================================*/
+document.getElementById('chartPeriod').addEventListener('change', (e) => {
+    loadChartData(e.target.value);
+});
 
-// Fonction pour tester les URLs avant de charger
-async function testRoutes() {
-    const routes = [
-        '/ajax/dashboard/chart-data',
-        '/ajax/dashboard/stats',
-        '/ajax/dashboard/recent-sales',
-        '/ajax/dashboard/low-stock'
-    ];
-    
-    console.log('Test des routes AJAX...');
-    
-    for (const route of routes) {
-        try {
-            const response = await fetch(route, { 
-                method: 'HEAD',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            console.log(`${route}: ${response.status} ${response.statusText}`);
-        } catch (error) {
-            console.error(`${route}: ${error.message}`);
-        }
-    }
-}
-
-// Initialisation au chargement de la page
-document.addEventListener('DOMContentLoaded', function() {
-    // Tester les routes (optionnel - pour débogage)
-    // testRoutes();
-    
-    // Charger le graphique via AJAX
+document.addEventListener("DOMContentLoaded", () => {
     loadChartData();
-    
-    // Charger les statistiques en arrière-plan
-    setTimeout(() => {
-        loadStats();
-        loadRecentSales();
-        loadLowStock();
-    }, 500); // Petit délai pour éviter le blocage
-    
-    // Gestionnaire d'événement pour le changement de période
-    document.getElementById('chartPeriod').addEventListener('change', function() {
-        loadChartData(parseInt(this.value));
-    });
-    
-    // Rafraîchissement automatique toutes les 5 minutes
+    loadStats();
+    loadRecentSales();
+    loadLowStock();
+
+    // Rafraîchissement auto toutes les 30 secondes
     setInterval(() => {
-        loadChartData(currentPeriod);
         loadStats();
         loadRecentSales();
         loadLowStock();
-    }, 300000); // 5 minutes
-    
-    // Ajouter des gestionnaires d'erreur globaux
-    window.addEventListener('error', function(e) {
-        console.error('Erreur globale:', e.error);
-    });
-    
-    window.addEventListener('unhandledrejection', function(e) {
-        console.error('Promesse rejetée non gérée:', e.reason);
-    });
+    }, 30000);
 });
-
-// Optimisation des performances
-window.addEventListener('load', function() {
-    // Chargement différé des images
-    const images = document.querySelectorAll('img[data-src]');
-    images.forEach(img => {
-        img.src = img.dataset.src;
-    });
-    
-    // Nettoyage des écouteurs d'événements quand la page est quittée
-    window.addEventListener('beforeunload', function() {
-        if (salesChart) {
-            salesChart.destroy();
-        }
-    });
-});
-
-// Fonction de fallback si les données sont déjà dans la page
-function initializeWithExistingData() {
-    // Vérifier si les données sont déjà disponibles dans le DOM
-    const salesToday = document.getElementById('salesToday').textContent;
-    const totalRevenue = document.getElementById('totalRevenue').textContent;
-    
-    console.log('Données initiales:', { salesToday, totalRevenue });
-}
 </script>
+
+
 @endsection
