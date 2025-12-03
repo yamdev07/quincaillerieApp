@@ -19,6 +19,7 @@ class SaleController extends Controller
     public function index()
     {
         $sales = Sale::with(['items.product', 'client', 'user'])
+                     ->withSum('items', 'quantity') // Quantité totale vendue
                      ->latest()
                      ->paginate(10);
 
@@ -30,7 +31,11 @@ class SaleController extends Controller
     // ----------------------
     public function create()
     {
-        $products = Product::all();
+        // Seuls les produits avec du STOCK disponible
+        $products = Product::where('stock', '>', 0)
+                          ->orderBy('name')
+                          ->get();
+        
         $clients = Client::all();
 
         return view('sales.create', compact('products', 'clients'));
@@ -41,45 +46,52 @@ class SaleController extends Controller
     // ----------------------
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'client_id' => 'nullable|exists:clients,id',
+            'products' => 'required|array|min:1',
             'products.*.product_id' => 'required|exists:products,id',
-            'products.*.quantity' => 'required|integer|min:1',
+            'products.*.quantity' => 'required|integer|min:1', // Quantité que le client veut acheter
         ]);
 
-        $clientId = $request->client_id;
-
-        DB::transaction(function () use ($request, $clientId) {
+        DB::transaction(function () use ($validated) {
             // Créer la vente
             $sale = Sale::create([
-                'client_id' => $clientId,
+                'client_id' => $validated['client_id'],
                 'user_id' => Auth::id(),
                 'total_price' => 0, // sera mis à jour après
             ]);
 
             $grandTotal = 0;
 
-            foreach ($request->products as $productData) {
+            foreach ($validated['products'] as $productData) {
                 $product = Product::lockForUpdate()->find($productData['product_id']);
-                $quantity = $productData['quantity'];
+                $quantityToSell = $productData['quantity']; // Quantité demandée par le client
 
-                if ($product->stock < $quantity) {
-                    throw new \Exception("Stock insuffisant pour le produit {$product->name}");
+                // Vérifier si le STOCK disponible est suffisant
+                if ($product->stock < $quantityToSell) {
+                    throw new \Exception(
+                        "Stock insuffisant pour '{$product->name}'. " .
+                        "Stock disponible: {$product->stock}, " .
+                        "Quantité demandée: {$quantityToSell}"
+                    );
                 }
 
-                $totalPrice = $product->sale_price * $quantity;
+                $totalPrice = $product->sale_price * $quantityToSell;
 
-                // Créer un item de vente
+                // Créer un item de vente (enregistre la quantité vendue)
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
-                    'quantity' => $quantity,
+                    'quantity' => $quantityToSell, // Quantité réellement vendue
                     'unit_price' => $product->sale_price,
                     'total_price' => $totalPrice,
                 ]);
 
-                // Décrémenter le stock
-                $product->decrement('stock', $quantity);
+                // RETIRER du STOCK la quantité vendue
+                $product->decrement('stock', $quantityToSell);
+
+                // OPTIONNEL: Augmenter le total vendu si vous avez ce champ
+                // $product->increment('quantity_sold', $quantityToSell);
 
                 $grandTotal += $totalPrice;
             }
@@ -97,52 +109,37 @@ class SaleController extends Controller
     public function show($id)
     {
         $sale = Sale::with(['items.product', 'client', 'user'])->findOrFail($id);
-        return view('sales.show', compact('sale'));
+        
+        // Calculer la quantité totale pour la vue
+        $totalQuantity = $sale->items->sum('quantity');
+        
+        return view('sales.show', compact('sale', 'totalQuantity'));
     }
 
     // ----------------------
-    // Dashboard principal
+    // Supprimer une vente (annulation)
     // ----------------------
-    public function dashboard()
-    {
-        $recentSales = Sale::with(['items.product','client','user'])
-                           ->latest()
-                           ->take(10)
-                           ->get();
-
-        $salesToday = Sale::whereDate('created_at', today())->count();
-        $totalRevenue = Sale::whereDate('created_at', today())->sum('total_price');
-        $lowStockProducts = Product::where('stock', '<=', 5)->get();
-        $activeClients = Client::count();
-
-        $salesByDay = Sale::selectRaw('DATE(created_at) as date, SUM(total_price) as total')
-                           ->where('created_at', '>=', now()->subDays(7))
-                           ->groupBy('date')
-                           ->orderBy('date')
-                           ->get();
-
-        $dates = $salesByDay->pluck('date')->map(fn($d) => Carbon::parse($d)->format('d/m'))->toArray();
-        $totals = $salesByDay->pluck('total')->toArray();
-
-        return view('dashboard', compact(
-            'recentSales',
-            'salesToday',
-            'totalRevenue',
-            'lowStockProducts',
-            'activeClients',
-            'dates',
-            'totals'
-        ));
-    }
     public function destroy($id)
     {
         $sale = Sale::findOrFail($id);
+        
+        // Vérifier si l'utilisateur est admin
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->route('sales.index')
+                ->with('error', 'Vous n\'avez pas les permissions pour supprimer une vente.');
+        }
 
         DB::transaction(function () use ($sale) {
-            // Rétablir le stock des produits vendus
+            // RÉTABLIR le STOCK pour chaque produit vendu
             foreach ($sale->items as $item) {
                 $product = Product::lockForUpdate()->find($item->product_id);
-                $product->increment('stock', $item->quantity);
+                if ($product) {
+                    // REMETTRE dans le STOCK la quantité qui avait été vendue
+                    $product->increment('stock', $item->quantity);
+                    
+                    // OPTIONNEL: Diminuer le total vendu
+                    // $product->decrement('quantity_sold', $item->quantity);
+                }
             }
 
             // Supprimer les items de vente
@@ -152,6 +149,65 @@ class SaleController extends Controller
             $sale->delete();
         });
 
-        return redirect()->route('sales.index')->with('success', 'Vente supprimée avec succès !');
+        return redirect()->route('sales.index')->with('success', 'Vente annulée et stock rétabli avec succès !');
+    }
+
+    // ----------------------
+    // Générer une facture
+    // ----------------------
+    public function invoice($id)
+    {
+        $sale = Sale::with(['items.product', 'client', 'user'])->findOrFail($id);
+        $totalQuantity = $sale->items->sum('quantity');
+        
+        return view('sales.invoice', compact('sale', 'totalQuantity'));
+    }
+
+    // ----------------------
+    // API pour les statistiques (optionnel)
+    // ----------------------
+    public function getStats()
+    {
+        $stats = [
+            'total_sales' => Sale::count(),
+            'total_revenue' => Sale::sum('total_price'),
+            'total_quantity_sold' => SaleItem::sum('quantity'),
+            'average_sale' => Sale::avg('total_price'),
+            'unique_clients' => Sale::distinct('client_id')->count('client_id'),
+            'active_cashiers' => Sale::distinct('user_id')->count('user_id'),
+        ];
+        
+        return response()->json($stats);
+    }
+
+    // ----------------------
+    // Ventes par période (optionnel)
+    // ----------------------
+    public function salesByPeriod(Request $request)
+    {
+        $period = $request->get('period', 'today');
+        
+        $query = Sale::query();
+        
+        switch ($period) {
+            case 'today':
+                $query->whereDate('created_at', today());
+                break;
+            case 'week':
+                $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+                break;
+            case 'month':
+                $query->whereMonth('created_at', now()->month);
+                break;
+            case 'year':
+                $query->whereYear('created_at', now()->year);
+                break;
+        }
+        
+        $sales = $query->with(['items.product', 'client'])
+                       ->latest()
+                       ->paginate(10);
+        
+        return view('sales.index', compact('sales', 'period'));
     }
 }
