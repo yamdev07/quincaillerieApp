@@ -682,7 +682,7 @@
                         <!-- Data will be loaded via AJAX -->
                         @forelse($recentSales as $sale)
                             <tr>
-                                <td><strong>{{ $sale->product->name }}</strong></td>
+                                <td><strong>{{ $sale->product ? $sale->product->name : 'Produit inconnu' }}</strong></td>
                                 <td>{{ $sale->client ? $sale->client->name : 'Client inconnu' }}</td>
                                 <td><strong>{{ number_format($sale->total_price, 0, ',', ' ') }} FCFA</strong></td>
                                 <td>{{ $sale->created_at->format('d/m H:i') }}</td>
