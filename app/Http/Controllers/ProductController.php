@@ -279,7 +279,7 @@ class ProductController extends Controller
         return response()->json([
             'total_products' => Product::count(),
             'total_stock_value' => Product::sum(DB::raw('purchase_price * stock')),
-            'low_stock_count' => Product::where('stock', '<', 5)->count(),
+            'low_stock_count' => Product::where('stock', '<', 10)->count(),
             'out_of_stock_count' => Product::where('stock', '=', 0)->count(),
             'total_quantity_purchased' => Product::sum('stock'), // = total_stock
         ]);
