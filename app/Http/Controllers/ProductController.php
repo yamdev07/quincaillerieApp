@@ -24,15 +24,10 @@ class ProductController extends Controller
             $searchTerm = $search;
             
             $query->where(function($q) use ($searchTerm) {
-                // Recherche par nom
                 $q->where('name', 'LIKE', "%{$searchTerm}%")
-                  // Recherche par ID (si numérique)
                   ->orWhere('id', 'LIKE', "%{$searchTerm}%")
-                  // Recherche par prix de vente
                   ->orWhere('sale_price', 'LIKE', "%{$searchTerm}%")
-                  // Recherche par prix d'achat
                   ->orWhere('purchase_price', 'LIKE', "%{$searchTerm}%")
-                  // Recherche par stock
                   ->orWhere('stock', 'LIKE', "%{$searchTerm}%");
             });
         }
@@ -70,18 +65,11 @@ class ProductController extends Controller
         
         $products = $query->paginate(10);
         
-        // Calcul des statistiques - IMPORTANT : calculer AVANT la pagination
+        // Calcul des statistiques
         $totalStock = $products->sum('stock');
         $totalValue = $products->sum(function($product) {
             return ($product->sale_price ?? 0) * ($product->stock ?? 0);
         });
-        
-        // Si vous voulez calculer sur TOUS les produits (non paginés)
-        // $allProducts = clone $query;
-        // $totalStock = $allProducts->sum('stock');
-        // $totalValue = $allProducts->get()->sum(function($product) {
-        //     return ($product->sale_price ?? 0) * ($product->stock ?? 0);
-        // });
         
         return view('products.index', compact('products', 'totalStock', 'totalValue'));
     }

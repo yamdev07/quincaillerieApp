@@ -46,60 +46,83 @@ class SaleController extends Controller
     // ----------------------
     public function store(Request $request)
     {
+        \Log::info('=== DÉBUT VENTE ===');
+        \Log::info('Données brutes reçues:', $request->all());
+        
         $validated = $request->validate([
             'client_id' => 'nullable|exists:clients,id',
             'products' => 'required|array|min:1',
             'products.*.product_id' => 'required|exists:products,id',
-            'products.*.quantity' => 'required|integer|min:1', // Quantité que le client veut acheter
+            'products.*.quantity' => 'required|integer|min:1',
+            'products.*.unit_price' => 'required|numeric|min:0',
         ]);
-
+        
+        \Log::info('Données validées:', $validated);
+        
         DB::transaction(function () use ($validated) {
-            // Créer la vente
+            \Log::info('Transaction DB démarrée');
+            
             $sale = Sale::create([
                 'client_id' => $validated['client_id'],
                 'user_id' => Auth::id(),
-                'total_price' => 0, // sera mis à jour après
+                'total_price' => 0,
             ]);
-
+            
+            \Log::info("Vente créée - ID: {$sale->id}");
+            
             $grandTotal = 0;
-
-            foreach ($validated['products'] as $productData) {
+            
+            foreach ($validated['products'] as $index => $productData) {
+                \Log::info("Produit #{$index}:", $productData);
+                
                 $product = Product::lockForUpdate()->find($productData['product_id']);
-                $quantityToSell = $productData['quantity']; // Quantité demandée par le client
-
-                // Vérifier si le STOCK disponible est suffisant
-                if ($product->stock < $quantityToSell) {
-                    throw new \Exception(
-                        "Stock insuffisant pour '{$product->name}'. " .
-                        "Stock disponible: {$product->stock}, " .
-                        "Quantité demandée: {$quantityToSell}"
-                    );
+                
+                if (!$product) {
+                    \Log::error("Produit non trouvé: " . $productData['product_id']);
+                    continue;
                 }
-
-                $totalPrice = $product->sale_price * $quantityToSell;
-
-                // Créer un item de vente (enregistre la quantité vendue)
+                
+                \Log::info("Produit trouvé: {$product->name} (ID: {$product->id})");
+                \Log::info("Stock AVANT vente: {$product->stock}");
+                
+                $quantityToSell = $productData['quantity'];
+                $unitPrice = $productData['unit_price'];
+                
+                if ($product->stock < $quantityToSell) {
+                    $message = "Stock insuffisant pour '{$product->name}'. Stock: {$product->stock}, Demandé: {$quantityToSell}";
+                    \Log::error($message);
+                    throw new \Exception($message);
+                }
+                
+                // Créer l'item de vente
                 SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
-                    'quantity' => $quantityToSell, // Quantité réellement vendue
-                    'unit_price' => $product->sale_price,
-                    'total_price' => $totalPrice,
+                    'quantity' => $quantityToSell,
+                    'unit_price' => $unitPrice,
+                    'total_price' => $unitPrice * $quantityToSell,
                 ]);
-
-                // RETIRER du STOCK la quantité vendue
+                
+                \Log::info("SaleItem créé pour produit ID: {$product->id}");
+                
+                // DÉDUCTION DU STOCK
                 $product->decrement('stock', $quantityToSell);
-
-                // OPTIONNEL: Augmenter le total vendu si vous avez ce champ
-                // $product->increment('quantity_sold', $quantityToSell);
-
-                $grandTotal += $totalPrice;
+                
+                // Recharger le produit depuis la base
+                $product->refresh();
+                
+                \Log::info("Stock APRÈS vente: {$product->stock}");
+                \Log::info("---");
+                
+                $grandTotal += ($unitPrice * $quantityToSell);
             }
-
-            // Mettre à jour le total de la vente
+            
             $sale->update(['total_price' => $grandTotal]);
+            \Log::info("Total vente: {$grandTotal} CFA");
         });
-
+        
+        \Log::info('=== FIN VENTE ===');
+        
         return redirect()->route('sales.index')->with('success', 'Vente enregistrée avec succès !');
     }
 
