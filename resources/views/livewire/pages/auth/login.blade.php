@@ -23,49 +23,84 @@ new #[Layout('layouts.guest')] class extends Component
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }
 }; ?>
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
 
-<div>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+    <div class="w-full max-w-md p-8 animate-fadeIn">
 
-    <form wire:submit="login">
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="form.email" id="email" class="block mt-1 w-full" type="email" name="email" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('form.email')" class="mt-2" />
-        </div>
+        <!-- Session Status -->
+        <x-auth-session-status class="mb-4" :status="session('status')" />
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+        <form wire:submit="login" class="space-y-6">
 
-            <x-text-input wire:model="form.password" id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
+            <div class="text-center mb-8 select-none">
+                <h2 class="text-3xl font-bold text-white">Connexion</h2>
+                <p class="text-gray-400 mt-1 text-sm">Accédez à votre espace sécurisé</p>
+            </div>
 
-            <x-input-error :messages="$errors->get('form.password')" class="mt-2" />
-        </div>
+            <!-- Email -->
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Email</label>
+                <input
+                    wire:model="form.email"
+                    type="email"
+                    id="email"
+                    class="w-full px-4 py-3 bg-gray-900/60 border border-gray-700 rounded-xl
+                           text-gray-200 placeholder-gray-500
+                           focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    placeholder="exemple@mail.com"
+                >
+                <x-input-error :messages="$errors->get('form.email')" class="mt-1" />
+            </div>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember" class="inline-flex items-center">
-                <input wire:model="form.remember" id="remember" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
-            </label>
-        </div>
+            <!-- Password -->
+            <div>
+                <label class="text-gray-300 text-sm mb-1 block">Mot de passe</label>
+                <input
+                    wire:model="form.password"
+                    type="password"
+                    id="password"
+                    class="w-full px-4 py-3 bg-gray-900/60 border border-gray-700 rounded-xl
+                           text-gray-200 placeholder-gray-500
+                           focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    placeholder="••••••••"
+                >
+                <x-input-error :messages="$errors->get('form.password')" class="mt-1" />
+            </div>
 
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}" wire:navigate>
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
+            <!-- Remember + Password Reset -->
+            <div class="flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        wire:model="form.remember"
+                        class="text-indigo-600 bg-gray-900 border-gray-700 rounded focus:ring-indigo-500"
+                    >
+                    <span class="text-gray-400 text-sm">Se souvenir de moi</span>
+                </label>
 
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
-    </form>
+                @if (Route::has('password.request'))
+                    <a href="{{ route('password.request') }}" wire:navigate
+                        class="text-indigo-400 text-sm hover:text-indigo-300 transition hover:underline">
+                        Mot de passe oublié ?
+                    </a>
+                @endif
+            </div>
+
+            <button
+                type="submit"
+                class="w-full py-3 mt-2 bg-indigo-600 hover:bg-indigo-700
+                       text-white font-semibold rounded-xl shadow-md transition active:scale-[0.98]">
+                Connexion
+            </button>
+
+        </form>
+    </div>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+    </style>
 </div>
