@@ -180,12 +180,12 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-100 text-sm font-medium">Total produits</p>
-                        <h3 class="text-3xl font-bold mt-1">{{ $products->total() }}</h3>
+                        <h3 class="text-3xl font-bold mt-1">{{ $totalProductsGlobal }}</h3>
                         <p class="text-xs text-blue-100 mt-1">
                             @if(request('search') || request('filter'))
-                                (Filtrés)
+                                {{ $products->total() }} filtrés
                             @else
-                                (Tous)
+                                Tous les produits
                             @endif
                         </p>
                     </div>
@@ -198,13 +198,13 @@
             <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-green-100 text-sm font-medium">Stock disponible</p>
-                        <h3 class="text-3xl font-bold mt-1">{{ $totalStock }}</h3>
+                        <p class="text-green-100 text-sm font-medium">Stock total</p>
+                        <h3 class="text-3xl font-bold mt-1">{{ number_format($totalStockGlobal, 0, ',', ' ') }}</h3>
                         <p class="text-xs text-green-100 mt-1">
                             @if(request('search') || request('filter'))
-                                (Filtrés)
+                                {{ number_format($totalStockFiltered, 0, ',', ' ') }} unités filtrées
                             @else
-                                (Total)
+                                Unités totales
                             @endif
                         </p>
                     </div>
@@ -218,9 +218,11 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-purple-100 text-sm font-medium">Valeur totale</p>
-                            <h3 class="text-3xl font-bold mt-1">{{ number_format($totalValue ?? 0, 0, ',', ' ') }}</h3>                        <p class="text-xs text-purple-100 mt-1">CFA 
+                        <h3 class="text-3xl font-bold mt-1">{{ number_format($totalValueGlobal, 0, ',', ' ') }}</h3>
+                        <p class="text-xs text-purple-100 mt-1">
+                            CFA 
                             @if(request('search') || request('filter'))
-                                (Filtrés)
+                                • {{ number_format($totalValueFiltered, 0, ',', ' ') }} CFA filtrés
                             @endif
                         </p>
                     </div>

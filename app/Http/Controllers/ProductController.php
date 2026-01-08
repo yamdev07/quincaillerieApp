@@ -65,13 +65,29 @@ class ProductController extends Controller
         
         $products = $query->paginate(10);
         
-        // Calcul des statistiques (SEULEMENT stock)
-        $totalStock = $products->sum('stock');
-        $totalValue = $products->sum(function($product) {
+        // ============ CALCUL DES STATISTIQUES ============
+        
+        // STATISTIQUES GLOBALES (TOUS les produits, sans filtres)
+        $totalProductsGlobal = Product::count(); // Total de tous les produits
+        $totalStockGlobal = Product::sum('stock'); // Stock total de tous les produits
+        $totalValueGlobal = Product::sum(DB::raw('sale_price * stock')); // Valeur totale de tous les produits
+        
+        // STATISTIQUES FILTRÉES (produits affichés selon recherche/filtres)
+        $totalStockFiltered = $products->sum('stock');
+        $totalValueFiltered = $products->sum(function($product) {
             return ($product->sale_price ?? 0) * ($product->stock ?? 0);
         });
         
-        return view('products.index', compact('products', 'totalStock', 'totalValue'));
+        return view('products.index', compact(
+            'products',
+            // Statistiques globales
+            'totalProductsGlobal',
+            'totalStockGlobal', 
+            'totalValueGlobal',
+            // Statistiques filtrées
+            'totalStockFiltered',
+            'totalValueFiltered'
+        ));
     }
     
     /**
@@ -185,13 +201,14 @@ class ProductController extends Controller
                           ->orderBy('stock', 'asc') // Trier par stock disponible
                           ->get();
         
+        // Statistiques GLOBALES pour le rapport
         $reportData = [
             'total_products' => $products->count(),
             'total_stock_value' => $products->sum(fn($p) => $p->stock * $p->purchase_price),
+            'total_sale_value' => $products->sum(fn($p) => $p->stock * $p->sale_price),
             'low_stock' => $products->where('stock', '<', 10)->count(),
             'out_of_stock' => $products->where('stock', '=', 0)->count(),
             'total_purchased' => $products->sum('stock'), // Maintenant = total_stock
-            'total_sold' => 0, // Pas de calcul de vente séparé
         ];
 
         return view('reports.products', compact('products', 'reportData'));
@@ -279,9 +296,10 @@ class ProductController extends Controller
         return response()->json([
             'total_products' => Product::count(),
             'total_stock_value' => Product::sum(DB::raw('purchase_price * stock')),
+            'total_sale_value' => Product::sum(DB::raw('sale_price * stock')),
             'low_stock_count' => Product::where('stock', '<', 10)->count(),
             'out_of_stock_count' => Product::where('stock', '=', 0)->count(),
-            'total_quantity_purchased' => Product::sum('stock'), // = total_stock
+            'total_stock' => Product::sum('stock'),
         ]);
     }
 }
