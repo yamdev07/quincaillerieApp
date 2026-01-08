@@ -263,9 +263,10 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('categories')->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('categories.index');
         Route::get('/{category}', [CategoryController::class, 'show'])->name('categories.show');
+        Route::get('/{category}', [CategoryController::class, 'create'])->name('categories.create');
     });
 
-    // ----------------------
+    // -----------------------
     // RAPPORTS ET STATISTIQUES
     // ----------------------
     Route::prefix('reports')->group(function () {
