@@ -233,7 +233,7 @@
             </div>
         </div>
 
-        <!-- Products Table -->
+        <!-- Products Table - Version simplifiée -->
         <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -246,12 +246,25 @@
                                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Prix d'achat</th>
                             @endif
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Stock</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Valeur du stock</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-100 uppercase tracking-wider">Date création</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-100 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($products as $product)
+                            @php
+                                $stock = $product->stock ?? 0;
+                                $salePrice = $product->sale_price ?? 0;
+                                $purchasePrice = $product->purchase_price ?? 0;
+                                $totalValue = $stock * $salePrice;
+                                $totalCost = $stock * $purchasePrice;
+                                $profitPerItem = $salePrice - $purchasePrice;
+                                $totalProfit = $profitPerItem * $stock;
+                                
+                                // Classes pour le stock
+                                $stockClass = $stock > 10 ? 'success' : ($stock > 0 ? 'warning' : 'danger');
+                            @endphp
                             <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent transition-all duration-200 group">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-semibold text-sm group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
@@ -265,31 +278,55 @@
                                         </div>
                                         <div>
                                             <p class="font-semibold text-gray-800">{{ $product->name ?? 'N/A' }}</p>
-                                            <p class="text-xs text-gray-500">Produit #{{ $product->id }}</p>
+                                            <p class="text-xs text-gray-500">#{{ $product->id }}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
-                                        <span class="text-lg font-bold text-gray-800">{{ isset($product->sale_price) ? number_format($product->sale_price, 0, ',', ' ') : '0' }}</span>
+                                        <span class="text-lg font-bold text-gray-800">{{ number_format($salePrice, 0, ',', ' ') }}</span>
                                         <span class="text-xs text-gray-500">CFA</span>
                                     </div>
                                 </td>
                                 @if(Auth::user() && Auth::user()->role === 'admin')
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex flex-col">
-                                            <span class="text-lg font-bold text-gray-800">{{ isset($product->purchase_price) ? number_format($product->purchase_price, 0, ',', ' ') : '0' }}</span>
+                                            <span class="text-lg font-bold text-gray-800">{{ number_format($purchasePrice, 0, ',', ' ') }}</span>
                                             <span class="text-xs text-gray-500">CFA</span>
                                         </div>
                                     </td>
                                 @endif
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    @php $stock = $product->stock ?? 0; @endphp
                                     <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm
-                                        {{ $stock > 10 ? 'bg-green-100 text-green-800 border border-green-200' : ($stock > 0 ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 'bg-red-100 text-red-800 border border-red-200') }}">
-                                        <span class="w-2 h-2 rounded-full {{ $stock > 10 ? 'bg-green-500' : ($stock > 0 ? 'bg-yellow-500' : 'bg-red-500') }} animate-pulse"></span>
+                                        {{ $stockClass === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 
+                                        ($stockClass === 'warning' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 'bg-red-100 text-red-800 border border-red-200') }}">
+                                        <span class="w-2 h-2 rounded-full 
+                                            {{ $stockClass === 'success' ? 'bg-green-500' : 
+                                            ($stockClass === 'warning' ? 'bg-yellow-500' : 'bg-red-500') }} animate-pulse"></span>
                                         {{ $stock }}
                                     </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex flex-col">
+                                        <!-- Valeur totale du stock -->
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-lg font-bold text-purple-700">
+                                                {{ number_format($totalValue, 0, ',', ' ') }}
+                                            </span>
+                                            <span class="text-xs text-gray-500">CFA</span>
+                                        </div>
+                                        
+                                        <!-- Info détaillée (optionnel) -->
+                                        @if(Auth::user() && Auth::user()->role === 'admin' && $purchasePrice > 0)
+                                            <div class="text-xs text-gray-500 mt-1">
+                                                <div class="flex items-center gap-1">
+                                                    <span class="text-green-600">+{{ number_format($totalProfit, 0, ',', ' ') }} CFA</span>
+                                                    <span class="text-gray-400">•</span>
+                                                    <span>Bénéfice</span>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-2 text-sm text-gray-600">
@@ -304,24 +341,24 @@
                                     <div class="flex items-center justify-center gap-3">
                                         <!-- Bouton Voir -->
                                         <a href="{{ route('products.show', $product->id) }}" 
-                                           class="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200 group"
-                                           title="Voir détails">
+                                        class="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200 group"
+                                        title="Voir détails">
                                             <i class="bi bi-eye text-lg group-hover:scale-110 transition-transform"></i>
                                         </a>
 
                                         @if(Auth::user() && Auth::user()->role === 'admin')
                                             <!-- Bouton Modifier -->
                                             <a href="{{ route('products.edit', $product->id) }}" 
-                                               class="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-800 rounded-xl shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200 group"
-                                               title="Modifier">
+                                            class="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-800 rounded-xl shadow-md hover:shadow-lg transform hover:scale-110 transition-all duration-200 group"
+                                            title="Modifier">
                                                 <i class="bi bi-pencil-square text-lg group-hover:scale-110 transition-transform"></i>
                                             </a>
 
                                             <!-- Bouton Supprimer -->
                                             <form action="{{ route('products.destroy', $product->id) }}" 
-                                                  method="POST" 
-                                                  onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce produit ?')" 
-                                                  class="inline">
+                                                method="POST" 
+                                                onsubmit="return confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce produit ?')" 
+                                                class="inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" 
@@ -336,7 +373,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-16 text-center">
+                                <td colspan="{{ Auth::user() && Auth::user()->role === 'admin' ? 8 : 7 }}" class="px-6 py-16 text-center">
                                     <div class="flex flex-col items-center justify-center">
                                         <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                                             <i class="bi bi-box-seam text-5xl text-gray-400"></i>
@@ -357,7 +394,7 @@
                                         </p>
                                         @if(request('search') || request('filter'))
                                             <a href="{{ route('products.index') }}" 
-                                               class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 inline-flex items-center gap-2">
+                                            class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 inline-flex items-center gap-2">
                                                 <i class="bi bi-arrow-counterclockwise"></i>
                                                 <span>Voir tous les produits</span>
                                             </a>
