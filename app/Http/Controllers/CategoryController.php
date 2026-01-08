@@ -80,12 +80,14 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:categories,name',
+            'sub_name' => 'required|string|max:255', // ⚠️ AJOUTÉ ICI
             'description' => 'nullable|string|max:1000',
             'color' => 'nullable|string|max:7|regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/',
         ]);
 
         Category::create([
             'name' => $request->name,
+            'sub_name' => $request->sub_name, // ⚠️ AJOUTÉ ICI
             'description' => $request->description ?? null,
             'color' => $request->color ?? '#6b7280', // Couleur par défaut gris
             'icon' => $request->icon ?? 'bi-folder',
@@ -109,12 +111,14 @@ class CategoryController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+            'sub_name' => 'required|string|max:255', // ⚠️ AJOUTÉ ICI
             'description' => 'nullable|string|max:1000',
             'color' => 'nullable|string|max:7|regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/',
         ]);
 
         $category->update([
             'name' => $request->name,
+            'sub_name' => $request->sub_name, // ⚠️ AJOUTÉ ICI
             'description' => $request->description ?? null,
             'color' => $request->color ?? $category->color,
             'icon' => $request->icon ?? $category->icon,

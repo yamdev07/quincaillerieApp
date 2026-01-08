@@ -192,10 +192,61 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
 });
 
 // ======================
-// Routes protégées par authentification
+// Routes ADMIN uniquement (doivent être DÉFINIES EN PREMIER)
+// ======================
+
+// 1. CATÉGORIES - CRUD admin
+Route::middleware(['auth', 'adminmiddleware'])->prefix('categories')->group(function () {
+    Route::get('/create', [CategoryController::class, 'create'])->name('categories.create'); // ✅ CORRECT: pas de paramètre
+    Route::post('/', [CategoryController::class, 'store'])->name('categories.store');
+    Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
+    Route::put('/{category}', [CategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+});
+
+// 2. PRODUITS - CRUD admin
+Route::middleware(['auth', 'adminmiddleware'])->prefix('products')->group(function () {
+    Route::get('/create', [ProductController::class, 'create'])->name('products.create');
+    Route::post('/', [ProductController::class, 'store'])->name('products.store');
+    Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+    Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
+    Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    Route::get('/{product}/stock', [ProductController::class, 'stock'])->name('products.stock');
+    Route::post('/{product}/stock', [ProductController::class, 'updateStock'])->name('products.stock.update');
+});
+
+// 3. FOURNISSEURS - CRUD admin (si nécessaire)
+Route::middleware(['auth', 'adminmiddleware'])->prefix('suppliers')->group(function () {
+    Route::get('/create', [SupplierController::class, 'create'])->name('suppliers.create');
+    Route::post('/', [SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+    Route::put('/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
+    Route::delete('/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
+    Route::get('/{supplier}/products', [SupplierController::class, 'products'])->name('suppliers.products');
+    Route::get('/{supplier}/orders', [SupplierController::class, 'orders'])->name('suppliers.orders');
+});
+
+// 4. Admin Dashboard + Gestion utilisateurs
+Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('admin.dashboard');
+
+    // Gestion des utilisateurs
+    Route::prefix('users')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('users.index');
+        Route::get('/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/', [UserController::class, 'store'])->name('users.store');
+        Route::get('/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+        Route::put('/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
+});
+
+// ======================
+// Routes protégées par authentification (pour tous les utilisateurs)
 // ======================
 Route::middleware(['auth'])->group(function () {
-
     // ----------------------
     // TABLEAU DE BORD PRINCIPAL
     // ----------------------
@@ -213,7 +264,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{sale}/edit', [SaleController::class, 'edit'])->name('sales.edit');
         Route::put('/{sale}', [SaleController::class, 'update'])->name('sales.update');
         Route::delete('/{sale}', [SaleController::class, 'destroy'])->name('sales.destroy');
-        Route::get('/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice'); // ⚡ AJOUTÉ ICI
+        Route::get('/{sale}/invoice', [SaleController::class, 'invoice'])->name('sales.invoice');
         Route::post('/{sale}/status', [SaleController::class, 'updateStatus'])->name('sales.status');
     });
 
@@ -233,18 +284,11 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // ----------------------
-    // FOURNISSEURS
+    // FOURNISSEURS - Lecture seule pour tous
     // ----------------------
     Route::prefix('suppliers')->group(function () {
         Route::get('/', [SupplierController::class, 'index'])->name('suppliers.index');
-        Route::get('/create', [SupplierController::class, 'create'])->name('suppliers.create');
-        Route::post('/', [SupplierController::class, 'store'])->name('suppliers.store');
         Route::get('/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
-        Route::get('/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
-        Route::put('/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
-        Route::delete('/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
-        Route::get('/{supplier}/products', [SupplierController::class, 'products'])->name('suppliers.products');
-        Route::get('/{supplier}/orders', [SupplierController::class, 'orders'])->name('suppliers.orders');
     });
 
     // ----------------------
@@ -263,7 +307,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('categories')->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('categories.index');
         Route::get('/{category}', [CategoryController::class, 'show'])->name('categories.show');
-        Route::get('/{category}', [CategoryController::class, 'create'])->name('categories.create');
+        // ⚠️ IMPORTANT: PAS de route /{category} pour create() ici
     });
 
     // -----------------------
@@ -294,49 +338,23 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ======================
-// CRUD produits pour les admins seulement
+// Routes de débogage (optionnel)
 // ======================
-Route::middleware(['auth', 'adminmiddleware'])->prefix('products')->group(function () {
-    Route::get('/create', [ProductController::class, 'create'])->name('products.create');
-    Route::post('/', [ProductController::class, 'store'])->name('products.store');
-    Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
-    Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
-    Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
-    Route::get('/{product}/stock', [ProductController::class, 'stock'])->name('products.stock');
-    Route::post('/{product}/stock', [ProductController::class, 'updateStock'])->name('products.stock.update');
-});
-
-// ======================
-// CRUD catégories pour les admins seulement
-// ======================
-Route::middleware(['auth', 'adminmiddleware'])->prefix('categories')->group(function () {
-    Route::get('/create', [CategoryController::class, 'create'])->name('categories.create');
-    Route::post('/', [CategoryController::class, 'store'])->name('categories.store');
-    Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-    Route::put('/{category}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
-});
-
-// ======================
-// Admin Dashboard + Gestion utilisateurs
-// ======================
-Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function () {
-
-    // Dashboard admin
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
-
-    // Gestion des utilisateurs
-    Route::prefix('users')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('users.index');
-        Route::get('/create', [UserController::class, 'create'])->name('users.create');
-        Route::post('/', [UserController::class, 'store'])->name('users.store');
-        Route::get('/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
-        Route::put('/{user}', [UserController::class, 'update'])->name('users.update');
-        Route::delete('/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+Route::get('/debug-categories-routes', function () {
+    $categoriesRoutes = collect(Route::getRoutes())->filter(function ($route) {
+        return str_contains($route->getName() ?? '', 'categories');
+    })->map(function ($route) {
+        return [
+            'name' => $route->getName(),
+            'uri' => $route->uri(),
+            'methods' => $route->methods(),
+        ];
     });
-});
 
-// Auth routes
+    return response()->json($categoriesRoutes);
+})->middleware('auth');
+
+// ======================
+// Routes d'authentification
+// ======================
 require __DIR__ . '/auth.php';

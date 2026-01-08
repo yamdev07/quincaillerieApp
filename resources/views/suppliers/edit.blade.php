@@ -1,191 +1,253 @@
 @extends('layouts.app')
 
-@section('title', 'Ajouter Fournisseur')
+@section('title', 'Modifier le Fournisseur')
 
 @section('content')
-<div class="container mx-auto py-8 px-4">
-    <div class="max-w-2xl mx-auto">
-        <!-- En-tête -->
-        <div class="mb-8">
-            <button onclick="window.location='{{ route('suppliers.index') }}'" class="inline-flex items-center px-4 py-2 bg-orange-600 text-white
-                font-semibold rounded hover:bg-orange-800 mb-4">
-                Retour a la liste
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+    <div class="container mx-auto px-4 max-w-4xl">
+        <!-- Bouton Retour -->
+        <div class="mb-4">
+            <button onclick="window.history.back()" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-2.5 px-5 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 group">
+                <i class="bi bi-arrow-left-circle text-xl group-hover:-translate-x-1 transition-transform duration-200"></i>
+                <span>Retour</span>
             </button>
-            <h1 class="text-3xl font-bold text-gray-800">Ajouter un nouveau fournisseur</h1>
-            <p class="text-gray-600 mt-2">Renseignez les informations du nouveau partenaire fournisseur</p>
         </div>
 
-        <!-- Carte du formulaire -->
-        <div class="glass-card rounded-xl shadow-lg overflow-hidden">
-            <div class="bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-800 flex items-center">
-                    <i class="fas fa-truck-loading mr-2 text-orange-500"></i>
-                    Informations du fournisseur
-                </h2>
-            </div>
-
-            <form method="POST" action="{{ route('suppliers.store') }}" class="p-6 space-y-6">
-                @csrf
-
-                <!-- Nom -->
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-                        Nom du fournisseur *
-                    </label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-building text-gray-400"></i>
-                        </div>
-                        <input type="text" 
-                               id="name" 
-                               name="name" 
-                               value="{{ old('name') }}" 
-                               required
-                               class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 @error('name') border-red-500 @enderror"
-                               placeholder="Entrez le nom de l'entreprise">
-                    </div>
-                    @error('name')
-                        <p class="mt-1 text-sm text-red-600 flex items-center">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
-                            {{ $message }}
-                        </p>
-                    @enderror
-                </div>
-
-                <!-- Contact -->
-                <div>
-                    <label for="contact" class="block text-sm font-medium text-gray-700 mb-2">
-                        Personne à contacter
-                    </label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-user-tie text-gray-400"></i>
-                        </div>
-                        <input type="text" 
-                               id="contact" 
-                               name="contact" 
-                               value="{{ old('contact') }}" 
-                               class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 @error('contact') border-red-500 @enderror"
-                               placeholder="Nom du responsable">
-                    </div>
-                    @error('contact')
-                        <p class="mt-1 text-sm text-red-600 flex items-center">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
-                            {{ $message }}
-                        </p>
-                    @enderror
-                </div>
-
-                <!-- Téléphone -->
-                <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
-                        Numéro de téléphone
-                    </label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-phone text-gray-400"></i>
-                        </div>
-                        <input type="text" 
-                               id="phone" 
-                               name="phone" 
-                               value="{{ old('phone') }}" 
-                               class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 @error('phone') border-red-500 @enderror"
-                               placeholder="+33 1 23 45 67 89">
-                    </div>
-                    @error('phone')
-                        <p class="mt-1 text-sm text-red-600 flex items-center">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
-                            {{ $message }}
-                        </p>
-                    @enderror
-                </div>
-
-                <!-- Informations supplémentaires -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div class="flex items-start">
-                        <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
-                        <div>
-                            <p class="text-sm text-blue-800 font-medium">Champs facultatifs</p>
-                            <p class="text-sm text-blue-600 mt-1">
-                                Le contact et le téléphone sont facultatifs, mais recommandés pour une meilleure communication avec votre fournisseur.
-                            </p>
-                        </div>
+        <!-- Vérification des autorisations -->
+        @if(auth()->user()->role !== 'admin')
+            <div class="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-xl shadow-md animate-fade-in mb-6" role="alert">
+                <div class="flex items-center gap-3">
+                    <i class="bi bi-shield-exclamation text-2xl text-red-600"></i>
+                    <div>
+                        <p class="font-semibold">Accès refusé!</p>
+                        <p class="text-sm">Vous n'avez pas l'autorisation d'accéder à cette section.</p>
                     </div>
                 </div>
-
-                <!-- Actions -->
-                <div class="flex flex-col sm:flex-row justify-end pt-6 border-t border-gray-200 gap-4">
-                    <a href="{{ route('suppliers.index') }}" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center order-2 sm:order-1">
-                        <i class="fas fa-times mr-2"></i>
-                        Annuler
+                <div class="mt-4">
+                    <a href="{{ route('suppliers.index') }}" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2">
+                        <i class="bi bi-arrow-left"></i>
+                        Retour aux fournisseurs
                     </a>
-                    <button type="submit" class="bg-gradient-to-r from-orange-600 to-amber-600 text-white px-6 py-3 rounded-lg shadow hover:from-orange-700 hover:to-amber-700 transition-all duration-300 flex items-center justify-center order-1 sm:order-2">
-                        <i class="fas fa-save mr-2"></i>
-                        Enregistrer le fournisseur
+                </div>
+            </div>
+            @php return; @endphp
+        @endif
+
+        <!-- Header Section -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent flex items-center gap-3">
+                        <span class="text-4xl">✏️</span>
+                        Modifier le fournisseur
+                    </h2>
+                    <p class="text-gray-500 mt-1 text-sm">Mettez à jour les informations du fournisseur #{{ $supplier->id }}</p>
+                </div>
+                <a href="{{ route('suppliers.index') }}" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group">
+                    <i class="bi bi-truck text-xl group-hover:-translate-x-1 transition-transform duration-200"></i>
+                    <span>Voir tous les fournisseurs</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        @if(session('success'))
+            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 text-green-800 px-6 py-4 rounded-xl relative mb-6 shadow-md animate-fade-in" role="alert">
+                <div class="flex items-center gap-3">
+                    <i class="bi bi-check-circle-fill text-2xl text-green-600"></i>
+                    <div>
+                        <p class="font-semibold">Succès!</p>
+                        <p class="text-sm">{{ session('success') }}</p>
+                    </div>
+                </div>
+                <button class="absolute top-4 right-4 text-green-600 hover:text-green-800 transition-colors" onclick="this.parentElement.remove();">
+                    <i class="bi bi-x-lg text-xl"></i>
+                </button>
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-xl relative mb-6 shadow-md animate-fade-in" role="alert">
+                <div class="flex items-center gap-3">
+                    <i class="bi bi-exclamation-triangle-fill text-2xl text-red-600"></i>
+                    <div>
+                        <p class="font-semibold">Erreur de validation!</p>
+                        <p class="text-sm">Veuillez corriger les erreurs dans le formulaire.</p>
+                    </div>
+                </div>
+                <button class="absolute top-4 right-4 text-red-600 hover:text-red-800 transition-colors" onclick="this.parentElement.remove();">
+                    <i class="bi bi-x-lg text-xl"></i>
+                </button>
+            </div>
+        @endif
+
+        <!-- Form Section -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <form action="{{ route('suppliers.update', $supplier->id) }}" method="POST" class="space-y-6">
+                @csrf
+                @method('PUT')
+
+                <!-- Informations du fournisseur -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="bi bi-info-circle text-orange-600"></i>
+                        Informations du fournisseur
+                    </h3>
+                    
+                    <!-- Nom Field -->
+                    <div class="space-y-2">
+                        <label for="name" class="block text-sm font-medium text-gray-700">
+                            Nom du fournisseur <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="bi bi-building text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="name" 
+                                name="name" 
+                                value="{{ old('name', $supplier->name) }}" 
+                                required
+                                class="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 shadow-sm @error('name') border-red-300 focus:ring-red-500 @enderror"
+                                placeholder="Nom de l'entreprise..."
+                            >
+                        </div>
+                        @error('name')
+                            <p class="text-red-500 text-sm mt-1 flex items-center gap-1">
+                                <i class="bi bi-exclamation-circle"></i>
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+
+                    <!-- Contact Field -->
+                    <div class="space-y-2">
+                        <label for="contact" class="block text-sm font-medium text-gray-700">
+                            Personne à contacter
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="bi bi-person-badge text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="contact" 
+                                name="contact" 
+                                value="{{ old('contact', $supplier->contact) }}" 
+                                class="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 shadow-sm @error('contact') border-red-300 focus:ring-red-500 @enderror"
+                                placeholder="Nom du responsable..."
+                            >
+                        </div>
+                        @error('contact')
+                            <p class="text-red-500 text-sm mt-1 flex items-center gap-1">
+                                <i class="bi bi-exclamation-circle"></i>
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+
+                    <!-- Phone Field -->
+                    <div class="space-y-2">
+                        <label for="phone" class="block text-sm font-medium text-gray-700">
+                            Numéro de téléphone
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="bi bi-telephone text-gray-400"></i>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="phone" 
+                                name="phone" 
+                                value="{{ old('phone', $supplier->phone) }}" 
+                                class="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 shadow-sm @error('phone') border-red-300 focus:ring-red-500 @enderror"
+                                placeholder="+33 1 23 45 67 89"
+                            >
+                        </div>
+                        @error('phone')
+                            <p class="text-red-500 text-sm mt-1 flex items-center gap-1">
+                                <i class="bi bi-exclamation-circle"></i>
+                                {{ $message }}
+                            </p>
+                        @enderror
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
+                    <button type="submit" class="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-semibold py-3.5 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group flex-1">
+                        <i class="bi bi-check2-circle text-xl group-hover:scale-110 transition-transform duration-300"></i>
+                        <span>Mettre à jour le fournisseur</span>
                     </button>
+                    
+                    <!-- Bouton Supprimer -->
+                    <button type="button" onclick="confirmDelete()" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3.5 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group flex-1">
+                        <i class="bi bi-trash text-xl group-hover:scale-110 transition-transform duration-300"></i>
+                        <span>Supprimer le fournisseur</span>
+                    </button>
+                    
+                    <a href="{{ route('suppliers.index') }}" class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-3.5 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group flex-1">
+                        <i class="bi bi-x-circle text-xl group-hover:rotate-90 transition-transform duration-300"></i>
+                        <span>Annuler</span>
+                    </a>
                 </div>
             </form>
         </div>
 
-        <!-- Preview Card -->
-        <div class="mt-8 glass-card rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <i class="fas fa-eye mr-2 text-gray-500"></i>
-                Aperçu de la fiche fournisseur
+        <!-- Informations supplémentaires -->
+        <div class="mt-6 bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="bi bi-clock-history text-orange-600"></i>
+                Informations supplémentaires
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                    <p class="text-gray-600">Nom</p>
-                    <p id="preview-name" class="font-medium text-gray-800">-</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <p class="text-sm text-gray-500">Créé le</p>
+                    <p class="font-medium text-gray-800">{{ $supplier->created_at->format('d/m/Y H:i') }}</p>
                 </div>
-                <div>
-                    <p class="text-gray-600">Contact</p>
-                    <p id="preview-contact" class="font-medium text-gray-800">-</p>
+                <div class="space-y-2">
+                    <p class="text-sm text-gray-500">Dernière modification</p>
+                    <p class="font-medium text-gray-800">{{ $supplier->updated_at->format('d/m/Y H:i') }}</p>
                 </div>
-                <div>
-                    <p class="text-gray-600">Téléphone</p>
-                    <p id="preview-phone" class="font-medium text-gray-800">-</p>
+                <div class="space-y-2">
+                    <p class="text-sm text-gray-500">Produits associés</p>
+                    <p class="font-medium text-gray-800">{{ $supplier->products_count ?? $supplier->products()->count() }} produits</p>
+                </div>
+                <div class="space-y-2">
+                    <p class="text-sm text-gray-500">ID du fournisseur</p>
+                    <p class="font-medium text-gray-800">#{{ $supplier->id }}</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@push('scripts')
 <script>
-    // Preview en temps réel
-    document.addEventListener('DOMContentLoaded', function() {
-        const nameInput = document.getElementById('name');
-        const contactInput = document.getElementById('contact');
-        const phoneInput = document.getElementById('phone');
+function confirmDelete() {
+    if (confirm('⚠️ Êtes-vous sûr de vouloir supprimer ce fournisseur ? Cette action est irréversible.')) {
+        // Créer un formulaire de suppression
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('suppliers.destroy', $supplier->id) }}';
         
-        const previewName = document.getElementById('preview-name');
-        const previewContact = document.getElementById('preview-contact');
-        const previewPhone = document.getElementById('preview-phone');
-
-        function updatePreview() {
-            previewName.textContent = nameInput.value || '-';
-            previewContact.textContent = contactInput.value || '-';
-            previewPhone.textContent = phoneInput.value || '-';
-        }
-
-        nameInput.addEventListener('input', updatePreview);
-        contactInput.addEventListener('input', updatePreview);
-        phoneInput.addEventListener('input', updatePreview);
-
-        // Initial update
-        updatePreview();
-    });
-</script>
-@endpush
-
-@push('styles')
-<style>
-    .glass-card {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        // Ajouter les champs CSRF et méthode DELETE
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = '_token';
+        csrf.value = '{{ csrf_token() }}';
+        form.appendChild(csrf);
+        
+        const method = document.createElement('input');
+        method.type = 'hidden';
+        method.name = '_method';
+        method.value = 'DELETE';
+        form.appendChild(method);
+        
+        // Soumettre le formulaire
+        document.body.appendChild(form);
+        form.submit();
     }
-</style>
-@endpush
+}
+</script>
 @endsection
