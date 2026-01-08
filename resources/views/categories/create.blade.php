@@ -74,7 +74,11 @@
                     <i class="bi bi-exclamation-triangle-fill text-2xl text-red-600"></i>
                     <div>
                         <p class="font-semibold">Erreur!</p>
-                        <p class="text-sm">Veuillez corriger les erreurs dans le formulaire.</p>
+                        <ul class="text-sm mt-1 list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
                     </div>
                 </div>
                 <button class="absolute top-4 right-4 text-red-600 hover:text-red-800 transition-colors" onclick="this.parentElement.remove();">
@@ -92,7 +96,7 @@
                 @endif
 
                 <!-- Informations de la catégorie -->
-                <div class="space-y-4">
+                <div class="space-y-6">
                     <h3 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
                         <i class="bi bi-info-circle text-blue-600"></i>
                         Informations de la catégorie
@@ -111,7 +115,7 @@
                                 type="text" 
                                 id="name" 
                                 name="name" 
-                                value="{{ $category->name ?? old('name') }}" 
+                                value="{{ old('name', $category->name ?? '') }}" 
                                 required
                                 class="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm @error('name') border-red-300 focus:ring-red-500 @enderror"
                                 placeholder="Ex: Électronique, Mode, Maison..."
@@ -125,52 +129,67 @@
                         @enderror
                     </div>
 
-                    <!-- Sous-nom Field -->
+                    <!-- Catégorie parente (optionnelle) -->
                     <div class="space-y-2">
-                        <label for="sub_name" class="block text-sm font-medium text-gray-700">
-                            Sous-nom <span class="text-red-500">*</span>
+                        <label for="parent_id" class="block text-sm font-medium text-gray-700">
+                            Catégorie parente
+                            <span class="text-xs text-gray-500 font-normal">(optionnel)</span>
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="bi bi-tags text-gray-400"></i>
+                                <i class="bi bi-diagram-2 text-gray-400"></i>
                             </div>
-                            <input 
-                                type="text" 
-                                id="sub_name" 
-                                name="sub_name" 
-                                value="{{ $category->sub_name ?? old('sub_name') }}" 
-                                required
-                                class="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm @error('sub_name') border-red-300 focus:ring-red-500 @enderror"
-                                placeholder="Ex: Téléphones, Vêtements, Meubles..."
+                            <select 
+                                id="parent_id" 
+                                name="parent_id" 
+                                class="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm @error('parent_id') border-red-300 focus:ring-red-500 @enderror appearance-none"
                             >
+                                <option value="">-- Catégorie principale (sans parent) --</option>
+                                @foreach($mainCategories as $mainCat)
+                                    <option value="{{ $mainCat->id }}" 
+                                        {{ old('parent_id', $category->parent_id ?? '') == $mainCat->id ? 'selected' : '' }}
+                                        {{ isset($category) && $category->id == $mainCat->id ? 'disabled' : '' }}>
+                                        {{ $mainCat->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <i class="bi bi-chevron-down text-gray-400"></i>
+                            </div>
                         </div>
-                        @error('sub_name')
+                        @error('parent_id')
                             <p class="text-red-500 text-sm mt-1 flex items-center gap-1">
                                 <i class="bi bi-exclamation-circle"></i>
                                 {{ $message }}
                             </p>
                         @enderror
+                        <p class="text-xs text-gray-500 mt-1">
+                            Laissez vide pour créer une catégorie principale.
+                            Sélectionnez une catégorie existante pour créer une sous-catégorie.
+                        </p>
                     </div>
 
-                    <!-- Exemple d'aperçu -->
-                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-                        <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                            <i class="bi bi-eye text-blue-600"></i>
-                            Aperçu de la catégorie
-                        </h4>
-                        <div class="flex items-center gap-3">
-                            <div id="previewIcon" class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
-                                {{ isset($category) && $category->name ? substr($category->name, 0, 1) : '?' }}
-                            </div>
-                            <div>
-                                <p id="previewName" class="font-semibold text-gray-800">
-                                    {{ $category->name ?? 'Nom de la catégorie' }}
-                                </p>
-                                <p id="previewSubName" class="text-sm text-gray-600">
-                                    {{ $category->sub_name ?? 'Sous-nom' }}
-                                </p>
-                            </div>
+                    <!-- Description -->
+                    <div class="space-y-2">
+                        <label for="description" class="block text-sm font-medium text-gray-700">
+                            Description
+                            <span class="text-xs text-gray-500 font-normal">(optionnel)</span>
+                        </label>
+                        <div class="relative">
+                            <textarea 
+                                id="description" 
+                                name="description" 
+                                rows="3"
+                                class="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm @error('description') border-red-300 focus:ring-red-500 @enderror"
+                                placeholder="Décrivez cette catégorie en détail..."
+                            >{{ old('description', $category->description ?? '') }}</textarea>
                         </div>
+                        @error('description')
+                            <p class="text-red-500 text-sm mt-1 flex items-center gap-1">
+                                <i class="bi bi-exclamation-circle"></i>
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
                 </div>
 
@@ -178,7 +197,7 @@
                 <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
                     <button type="submit" class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3.5 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group flex-1">
                         <i class="bi {{ isset($category) ? 'bi-check2-circle' : 'bi-plus-circle' }} text-xl group-hover:scale-110 transition-transform duration-300"></i>
-                        <span>{{ isset($category) ? 'Mettre à jour la catégorie' : 'Créer la catégorie' }}</span>
+                        <span>{{ isset($category) ? 'Mettre à jour' : 'Créer' }}</span>
                     </button>
                     
                     <a href="{{ route('categories.index') }}" class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-3.5 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 group flex-1">
@@ -189,7 +208,7 @@
             </form>
         </div>
 
-        <!-- Informations supplémentaires -->
+        <!-- Informations supplémentaires (pour l'édition) -->
         @if(isset($category))
             <div class="mt-6 bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
                 <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -205,6 +224,36 @@
                         <p class="text-sm text-gray-500">Dernière modification</p>
                         <p class="font-medium text-gray-800">{{ $category->updated_at->format('d/m/Y H:i') }}</p>
                     </div>
+                    <div class="space-y-2">
+                        <p class="text-sm text-gray-500">Type</p>
+                        <p class="font-medium text-gray-800">
+                            @if($category->parent_id)
+                                <span class="text-purple-600">Sous-catégorie</span>
+                            @else
+                                <span class="text-green-600">Catégorie principale</span>
+                            @endif
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="text-sm text-gray-500">Produits associés</p>
+                        <p class="font-medium text-gray-800">{{ $category->products->count() }} produits</p>
+                    </div>
+                    @if($category->parent_id && $category->parent)
+                        <div class="space-y-2">
+                            <p class="text-sm text-gray-500">Catégorie parente</p>
+                            <p class="font-medium text-gray-800">
+                                <a href="{{ route('categories.show', $category->parent->id) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                    {{ $category->parent->name }}
+                                </a>
+                            </p>
+                        </div>
+                    @endif
+                    @if($category->children->count() > 0)
+                        <div class="space-y-2">
+                            <p class="text-sm text-gray-500">Sous-catégories</p>
+                            <p class="font-medium text-gray-800">{{ $category->children->count() }} sous-catégorie(s)</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         @endif
@@ -245,62 +294,25 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Mise à jour de l'aperçu en temps réel
-    const nameInput = document.getElementById('name');
-    const subNameInput = document.getElementById('sub_name');
-    const previewIcon = document.getElementById('previewIcon');
-    const previewName = document.getElementById('previewName');
-    const previewSubName = document.getElementById('previewSubName');
-
-    function updatePreview() {
-        const name = nameInput.value || 'Nom de la catégorie';
-        const subName = subNameInput.value || 'Sous-nom';
-        
-        // Mettre à jour l'icône (première lettre du nom)
-        previewIcon.textContent = name.charAt(0).toUpperCase();
-        
-        // Mettre à jour le nom
-        previewName.textContent = name;
-        
-        // Mettre à jour le sous-nom
-        previewSubName.textContent = subName;
-    }
-
-    // Écouter les changements dans les champs
-    nameInput.addEventListener('input', updatePreview);
-    subNameInput.addEventListener('input', updatePreview);
-
-    // Initialiser l'aperçu
-    updatePreview();
-
     // Validation du formulaire
     const form = document.querySelector('form');
+    const nameInput = document.getElementById('name');
+    
     form.addEventListener('submit', function(e) {
         const name = nameInput.value.trim();
-        const subName = subNameInput.value.trim();
         
-        if (!name || !subName) {
+        if (!name) {
             e.preventDefault();
             
-            // Animation pour les champs vides
-            if (!name) {
-                nameInput.classList.add('animate-pulse', 'border-red-500');
-                setTimeout(() => {
-                    nameInput.classList.remove('animate-pulse');
-                }, 1000);
-            }
+            // Animation pour le champ vide
+            nameInput.classList.add('animate-pulse', 'border-red-500');
+            setTimeout(() => {
+                nameInput.classList.remove('animate-pulse');
+            }, 1000);
             
-            if (!subName) {
-                subNameInput.classList.add('animate-pulse', 'border-red-500');
-                setTimeout(() => {
-                    subNameInput.classList.remove('animate-pulse');
-                }, 1000);
-            }
-            
-            // Scroll vers le premier champ vide
-            const firstEmpty = !name ? nameInput : subNameInput;
-            firstEmpty.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            firstEmpty.focus();
+            // Scroll vers le champ vide
+            nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            nameInput.focus();
         }
     });
 });
