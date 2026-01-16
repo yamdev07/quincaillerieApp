@@ -9,6 +9,7 @@ use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 class ProductController extends Controller
 {
@@ -54,6 +55,18 @@ class ProductController extends Controller
                           ->having('batch_count', '>', 1);
                     });
                     break;
+                case 'cumulated':
+                    if (Schema::hasColumn('products', 'is_cumulated')) {
+                        $query->where('is_cumulated', true);
+                    } else {
+                        $query->whereRaw('1=0');
+                    }
+                    break;
+                case 'non_cumulated':
+                    if (Schema::hasColumn('products', 'has_been_cumulated')) {
+                        $query->where('has_been_cumulated', false);
+                    }
+                    break;
             }
         }
         
@@ -78,24 +91,20 @@ class ProductController extends Controller
         
         $products = $query->paginate(10);
         
-        // ============ CALCUL DES TOTAUX PAR LOT ============
+        // Calcul des totaux par lot
         foreach ($products as $product) {
             $stockTotals = $product->getStockTotals();
             $product->stock_summary = $stockTotals;
             $product->has_multiple_batches = $product->hasMultipleBatches();
         }
         
-        // ============ CALCUL DES STATISTIQUES ============
-        
-        // STATISTIQUES GLOBALES
+        // Calcul des statistiques
         $totalProductsGlobal = Product::count();
         $totalStockGlobal = Product::sum('stock');
         $totalValueGlobal = Product::sum(DB::raw('sale_price * stock'));
         
-        // STATISTIQUES AVEC MULTIPLES LOTS
         $productsWithMultipleBatches = Product::withMultipleBatches()->count();
         
-        // STATISTIQUES FILTRÉES
         $totalStockFiltered = $products->sum('stock');
         $totalValueFiltered = $products->sum(function($product) {
             return ($product->sale_price ?? 0) * ($product->stock ?? 0);
@@ -103,20 +112,15 @@ class ProductController extends Controller
         
         return view('products.index', compact(
             'products',
-            // Statistiques globales
             'totalProductsGlobal',
             'totalStockGlobal', 
             'totalValueGlobal',
             'productsWithMultipleBatches',
-            // Statistiques filtrées
             'totalStockFiltered',
             'totalValueFiltered'
         ));
     }
     
-    /**
-     * Méthode pour la recherche seulement
-     */
     public function search(Request $request)
     {
         return $this->index($request);
@@ -144,8 +148,6 @@ class ProductController extends Controller
             'supplier_id'    => 'required|exists:suppliers,id',
         ]);
 
-        // Vérifier si un produit similaire existe déjà
-        // On peut vérifier par nom + catégorie + fournisseur
         $existingProduct = Product::where('name', $request->name)
             ->where('category_id', $request->category_id)
             ->where('supplier_id', $request->supplier_id)
@@ -154,27 +156,35 @@ class ProductController extends Controller
         DB::beginTransaction();
         try {
             if ($existingProduct) {
-                // ✅ PRODUIT EXISTANT : On crée une NOUVELLE LIGNE avec le cumul
+                // ✅ PRODUIT EXISTANT : Créer une ligne cumulée
                 $oldStock = $existingProduct->stock;
                 $newStock = $oldStock + $request->stock;
                 
-                // Créer un nouveau produit comme "ligne cumulée"
-                $cumulatedProduct = Product::create([
+                $productData = [
                     'name'           => $request->name,
-                    'stock'          => $newStock, // Stock cumulé
-                    'quantity'       => $newStock,
-                    'purchase_price' => ($existingProduct->purchase_price + $request->purchase_price) / 2, // Prix moyen
-                    'sale_price'     => ($existingProduct->sale_price + $request->sale_price) / 2, // Prix moyen
+                    'stock'          => $newStock,
+                    'quantity'       => $newStock, // Ajout de quantity
+                    'purchase_price' => ($existingProduct->purchase_price + $request->purchase_price) / 2,
+                    'sale_price'     => ($existingProduct->sale_price + $request->sale_price) / 2,
                     'description'    => $request->description ?? $existingProduct->description,
                     'category_id'    => $request->category_id,
                     'supplier_id'    => $request->supplier_id,
-                    'parent_id'      => $existingProduct->id, // Lien vers le produit original
-                    'is_cumulated'   => true, // Marquer comme ligne cumulée
-                    'cumulated_from' => $existingProduct->id,
                     'batch_number'   => 'CUMUL-' . time() . '-' . Str::random(4),
-                ]);
+                ];
                 
-                // Enregistrer le mouvement pour le produit original
+                if (Schema::hasColumn('products', 'parent_id')) {
+                    $productData['parent_id'] = $existingProduct->id;
+                }
+                if (Schema::hasColumn('products', 'is_cumulated')) {
+                    $productData['is_cumulated'] = true;
+                }
+                if (Schema::hasColumn('products', 'cumulated_from')) {
+                    $productData['cumulated_from'] = $existingProduct->id;
+                }
+                
+                $cumulatedProduct = Product::create($productData);
+                
+                // Enregistrer les mouvements de stock
                 $this->addStockMovementWithPrice(
                     $existingProduct,
                     'sortie',
@@ -185,7 +195,6 @@ class ProductController extends Controller
                     'CUMUL-' . $cumulatedProduct->id
                 );
                 
-                // Enregistrer le mouvement initial pour le nouveau produit cumulé
                 $this->addStockMovementWithPrice(
                     $cumulatedProduct,
                     'entree',
@@ -196,7 +205,6 @@ class ProductController extends Controller
                     'INITIAL-CUMUL-' . $cumulatedProduct->id
                 );
                 
-                // Si l'ancien produit avait du stock, l'ajouter au mouvement
                 if ($oldStock > 0) {
                     $this->addStockMovementWithPrice(
                         $cumulatedProduct,
@@ -209,12 +217,19 @@ class ProductController extends Controller
                     );
                 }
                 
-                // Mettre à jour l'ancien produit pour indiquer qu'il a été cumulé
-                $existingProduct->update([
-                    'has_been_cumulated' => true,
-                    'cumulated_to' => $cumulatedProduct->id,
-                    'stock' => 0, // Le stock a été transféré
-                ]);
+                // Mettre à jour l'ancien produit
+                $updateData = [
+                    'stock' => 0,
+                    'quantity' => 0 // Ajout de quantity
+                ];
+                if (Schema::hasColumn('products', 'has_been_cumulated')) {
+                    $updateData['has_been_cumulated'] = true;
+                }
+                if (Schema::hasColumn('products', 'cumulated_to')) {
+                    $updateData['cumulated_to'] = $cumulatedProduct->id;
+                }
+                
+                $existingProduct->update($updateData);
                 
                 $product = $cumulatedProduct;
                 
@@ -225,17 +240,22 @@ class ProductController extends Controller
                     
             } else {
                 // ✅ NOUVEAU PRODUIT : Création normale
-                $product = Product::create([
+                $productData = [
                     'name'           => $request->name,
                     'stock'          => $request->stock,
-                    'quantity'       => $request->stock,
+                    'quantity'       => $request->stock, // Ajout de quantity
                     'purchase_price' => $request->purchase_price,
                     'sale_price'     => $request->sale_price,
                     'description'    => $request->description,
                     'category_id'    => $request->category_id,
                     'supplier_id'    => $request->supplier_id,
-                    'is_cumulated'   => false,
-                ]);
+                ];
+                
+                if (Schema::hasColumn('products', 'is_cumulated')) {
+                    $productData['is_cumulated'] = false;
+                }
+                
+                $product = Product::create($productData);
 
                 // Enregistrer le mouvement initial avec prix
                 if ($request->stock > 0) {
@@ -265,54 +285,86 @@ class ProductController extends Controller
     }
 
     // 👁️ Détails d'un produit AVEC STOCKS GROUPÉS
-    public function show(Product $product)
+    public function show($id)
     {
-        // Vérifier si ce produit a été cumulé vers un autre
-        if ($product->cumulated_to) {
-            $cumulatedProduct = Product::find($product->cumulated_to);
-            if ($cumulatedProduct) {
-                return redirect()->route('products.show', $cumulatedProduct)
-                    ->with('info', 'Ce produit a été cumulé avec un autre. Affichage du produit cumulé.');
-            }
+        $product = Product::with(['category', 'supplier'])
+            ->withCount('stockMovements')
+            ->findOrFail($id);
+        
+        $stockByPrice = DB::table('stock_movements')
+            ->select(
+                DB::raw('purchase_price'),
+                DB::raw('reference_document'),
+                DB::raw('SUM(quantity) as total_quantity'),
+                DB::raw('MAX(created_at) as last_update')
+            )
+            ->where('product_id', $id)
+            ->where('type', 'entree')
+            ->whereNotNull('purchase_price')
+            ->groupBy('purchase_price', 'reference_document')
+            ->having('total_quantity', '>', 0)
+            ->get();
+        
+        $totalStock = $product->stock ?? 0;
+        $totalValue = $product->stock * $product->sale_price;
+        $batchesCount = $stockByPrice->count();
+        
+        $totalValuePurchase = 0;
+        foreach ($stockByPrice as $batch) {
+            $totalValuePurchase += ($batch->total_quantity * $batch->purchase_price);
         }
         
-        // Calculer la quantité vendue
-        $quantitySold = $product->quantity - $product->stock;
+        $averagePurchasePrice = $totalStock > 0 
+            ? $totalValuePurchase / $totalStock 
+            : 0;
         
-        // Récupérer les stocks groupés
-        $stockTotals = $product->getStockTotals();
-        $stockSummary = $product->getStockSummary();
-        $stockByPrice = $product->getStockValueByPurchasePrice();
-        $largestBatch = $product->getLargestBatch();
-        $latestBatch = $product->getLatestBatch();
-        $stockConsistency = $product->checkStockConsistency();
+        $profitPotential = $totalValue - $totalValuePurchase;
         
-        // Récupérer les produits originaux si c'est un produit cumulé
-        $originalProducts = [];
-        if ($product->is_cumulated) {
-            $originalProducts = Product::where('cumulated_to', $product->id)
-                ->orWhere('parent_id', $product->id)
-                ->get();
-        }
+        $stockSummary = [
+            'total_stock' => $totalStock,
+            'total_value' => $totalValue,
+            'average_purchase_price' => $averagePurchasePrice,
+            'profit_potential' => $profitPotential,
+            'batches_count' => $batchesCount,
+            'has_multiple_batches' => $batchesCount > 1,
+            'total_value_purchase' => $totalValuePurchase,
+        ];
+        
+        $recentMovements = $product->stockMovements()
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+        
+        $calculatedStock = $product->stockMovements()
+            ->where('type', 'entree')
+            ->sum('quantity') 
+            - $product->stockMovements()
+                ->where('type', 'sortie')
+                ->sum('quantity');
+        
+        $stockConsistency = [
+            'current_stock' => $product->stock ?? 0,
+            'calculated_stock' => $calculatedStock,
+            'difference' => ($product->stock ?? 0) - $calculatedStock,
+            'is_consistent' => ($product->stock ?? 0) == $calculatedStock
+        ];
         
         return view('products.show', compact(
-            'product', 
-            'quantitySold',
-            'stockTotals',
-            'stockSummary',
+            'product',
             'stockByPrice',
-            'largestBatch',
-            'latestBatch',
-            'stockConsistency',
-            'originalProducts'
+            'stockSummary',
+            'recentMovements',
+            'stockConsistency'
         ));
     }
 
     // ✏️ Page d'édition
     public function edit(Product $product)
     {
-        // Vérifier si le produit a été cumulé
-        if ($product->has_been_cumulated && $product->cumulated_to) {
+        if (Schema::hasColumn('products', 'has_been_cumulated') && 
+            Schema::hasColumn('products', 'cumulated_to') && 
+            $product->has_been_cumulated && 
+            $product->cumulated_to) {
             return redirect()->route('products.show', $product)
                 ->with('warning', 'Ce produit a été cumulé et ne peut plus être modifié directement.');
         }
@@ -326,8 +378,10 @@ class ProductController extends Controller
     // ✏️ Mise à jour (SIMPLIFIÉE)
     public function update(Request $request, Product $product)
     {
-        // Vérifier si le produit a été cumulé
-        if ($product->has_been_cumulated && $product->cumulated_to) {
+        if (Schema::hasColumn('products', 'has_been_cumulated') && 
+            Schema::hasColumn('products', 'cumulated_to') && 
+            $product->has_been_cumulated && 
+            $product->cumulated_to) {
             return redirect()->route('products.show', $product)
                 ->with('warning', 'Ce produit a été cumulé et ne peut plus être modifié.');
         }
@@ -344,10 +398,8 @@ class ProductController extends Controller
         
         $oldStock = $product->stock;
         
-        // Synchroniser quantity avec stock
         $validated['quantity'] = $validated['stock'];
         
-        // Si le stock a changé, enregistrer un mouvement d'ajustement
         if ($oldStock != $validated['stock']) {
             $difference = $validated['stock'] - $oldStock;
             $type = $difference > 0 ? 'entree' : 'sortie';
@@ -362,7 +414,6 @@ class ProductController extends Controller
                 'EDIT-' . $product->id
             );
         } else {
-            // Même si le stock n'a pas changé, mettre à jour les prix dans le produit
             $product->update($validated);
         }
         
@@ -372,17 +423,22 @@ class ProductController extends Controller
     // 🗑️ Suppression d'un produit
     public function destroy(Product $product)
     {
-        // Vérifier si le produit a été cumulé
-        if ($product->has_been_cumulated && $product->cumulated_to) {
+        if (Schema::hasColumn('products', 'has_been_cumulated') && 
+            Schema::hasColumn('products', 'cumulated_to') && 
+            $product->has_been_cumulated && 
+            $product->cumulated_to) {
             return redirect()->route('products.index')
                 ->with('warning', 'Ce produit a été cumulé et ne peut pas être supprimé.');
         }
         
-        // Vérifier si c'est un produit cumulé qui a des produits originaux
-        if ($product->is_cumulated) {
-            $originalCount = Product::where('cumulated_to', $product->id)
-                ->orWhere('parent_id', $product->id)
-                ->count();
+        if (Schema::hasColumn('products', 'is_cumulated') && $product->is_cumulated) {
+            $originalCount = 0;
+            if (Schema::hasColumn('products', 'cumulated_to')) {
+                $originalCount += Product::where('cumulated_to', $product->id)->count();
+            }
+            if (Schema::hasColumn('products', 'parent_id')) {
+                $originalCount += Product::where('parent_id', $product->id)->count();
+            }
             
             if ($originalCount > 0) {
                 return redirect()->route('products.index')
@@ -403,18 +459,25 @@ class ProductController extends Controller
     // 📊 Rapport des produits AVEC STOCKS GROUPÉS
     public function productsReport()
     {
-        // Exclure les produits qui ont été cumulés
-        $products = Product::where('has_been_cumulated', false)
-            ->with(['category', 'supplier'])
+        $query = Product::query();
+        
+        if (Schema::hasColumn('products', 'has_been_cumulated')) {
+            $query->where('has_been_cumulated', false);
+        }
+        
+        $products = $query->with(['category', 'supplier'])
             ->orderBy('stock', 'asc')
             ->get();
         
-        // Ajouter les informations de stocks groupés pour chaque produit
         foreach ($products as $product) {
             $product->stock_totals = $product->getStockTotals();
         }
         
-        // Statistiques GLOBALES pour le rapport
+        $cumulatedProductsCount = 0;
+        if (Schema::hasColumn('products', 'is_cumulated')) {
+            $cumulatedProductsCount = Product::where('is_cumulated', true)->count();
+        }
+        
         $reportData = [
             'total_products' => $products->count(),
             'total_stock_value' => $products->sum(fn($p) => $p->stock * $p->purchase_price),
@@ -424,7 +487,7 @@ class ProductController extends Controller
             'total_purchased' => $products->sum('stock'),
             'products_multiple_batches' => $products->filter(fn($p) => $p->hasMultipleBatches())->count(),
             'total_batches' => $products->sum(fn($p) => $p->getStockTotals()['number_of_batches']),
-            'cumulated_products' => Product::where('is_cumulated', true)->count(),
+            'cumulated_products' => $cumulatedProductsCount,
         ];
 
         return view('reports.products', compact('products', 'reportData'));
@@ -433,10 +496,19 @@ class ProductController extends Controller
     // 📈 Statistiques rapides AVEC INFOS BATCHES
     public function getQuickStats()
     {
-        $products = Product::where('has_been_cumulated', false)->get();
+        $query = Product::query();
+        if (Schema::hasColumn('products', 'has_been_cumulated')) {
+            $query->where('has_been_cumulated', false);
+        }
+        
+        $products = $query->get();
         $productsWithMultipleBatches = $products->filter(fn($p) => $p->hasMultipleBatches())->count();
         $totalBatches = $products->sum(fn($p) => $p->getStockTotals()['number_of_batches']);
-        $cumulatedProductsCount = Product::where('is_cumulated', true)->count();
+        
+        $cumulatedProductsCount = 0;
+        if (Schema::hasColumn('products', 'is_cumulated')) {
+            $cumulatedProductsCount = Product::where('is_cumulated', true)->count();
+        }
         
         return response()->json([
             'total_products' => $products->count(),
@@ -452,12 +524,9 @@ class ProductController extends Controller
     }
 
     // ============================================
-    // HISTORIQUE DES STOCKS - MISE À JOUR
+    // HISTORIQUE DES STOCKS
     // ============================================
 
-    /**
-     * Afficher l'historique d'un produit
-     */
     public function history(Product $product, Request $request)
     {
         $request->validate([
@@ -471,7 +540,6 @@ class ProductController extends Controller
             ->with('user:id,name')
             ->orderBy('created_at', 'desc');
         
-        // Appliquer les filtres
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
@@ -484,11 +552,9 @@ class ProductController extends Controller
             $query->whereDate('created_at', '<=', $request->end_date);
         }
         
-        // Pagination
         $perPage = $request->get('per_page', 20);
         $movements = $query->paginate($perPage);
         
-        // Calculer les totaux
         $totals = $product->stockMovements()
             ->selectRaw('type, SUM(quantity) as total_quantity, COUNT(*) as count')
             ->when($request->filled('start_date'), function($q) use ($request) {
@@ -501,15 +567,11 @@ class ProductController extends Controller
             ->get()
             ->keyBy('type');
         
-        // Récupérer les stocks groupés pour affichage
         $stockTotals = $product->getStockTotals();
         
         return view('products.history', compact('product', 'movements', 'totals', 'stockTotals'));
     }
     
-    /**
-     * Historique global (tous les produits)
-     */
     public function globalHistory(Request $request)
     {
         $request->validate([
@@ -523,7 +585,6 @@ class ProductController extends Controller
         $query = StockMovement::with(['product:id,name', 'user:id,name'])
             ->orderBy('created_at', 'desc');
         
-        // Filtres
         if ($request->filled('product_id')) {
             $query->where('product_id', $request->product_id);
         }
@@ -549,7 +610,6 @@ class ProductController extends Controller
         $perPage = $request->get('per_page', 50);
         $movements = $query->paginate($perPage);
         
-        // Statistiques
         $stats = StockMovement::selectRaw('
             COUNT(*) as total_movements,
             SUM(CASE WHEN type = "entree" THEN quantity ELSE 0 END) as total_entrees,
@@ -568,9 +628,6 @@ class ProductController extends Controller
         return view('products.global-history', compact('movements', 'stats', 'products'));
     }
     
-    /**
-     * Rapport détaillé des stocks groupés par produit
-     */
     public function groupedStocksReport(Request $request)
     {
         $request->validate([
@@ -579,10 +636,12 @@ class ProductController extends Controller
             'sort_by' => 'nullable|in:name,total_value,batches_count'
         ]);
         
-        // Exclure les produits cumulés et ceux qui ont été cumulés
-        $query = Product::where('has_been_cumulated', false);
+        $query = Product::query();
         
-        // Filtres
+        if (Schema::hasColumn('products', 'has_been_cumulated')) {
+            $query->where('has_been_cumulated', false);
+        }
+        
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
@@ -591,13 +650,11 @@ class ProductController extends Controller
             $query->where('supplier_id', $request->supplier_id);
         }
         
-        // Appliquer le tri
         switch ($request->get('sort_by', 'name')) {
             case 'total_value':
                 $query->orderByRaw('(sale_price * stock) DESC');
                 break;
             case 'batches_count':
-                // Tri complexe - on triera après
                 break;
             default:
                 $query->orderBy('name', 'asc');
@@ -606,7 +663,6 @@ class ProductController extends Controller
         
         $products = $query->get();
         
-        // Préparer les données pour chaque produit
         $productsData = [];
         $totalGlobalValue = 0;
         $totalBatches = 0;
@@ -626,19 +682,19 @@ class ProductController extends Controller
             $totalBatches += $summary['batches_count'];
         }
         
-        // Trier par nombre de batches si demandé
         if ($request->get('sort_by') == 'batches_count') {
             usort($productsData, function($a, $b) {
                 return $b['summary']['batches_count'] <=> $a['summary']['batches_count'];
             });
         }
         
-        // Récupérer aussi les produits cumulés séparément
-        $cumulatedProducts = Product::where('is_cumulated', true)
-            ->with(['stockMovements'])
-            ->get();
+        $cumulatedProducts = collect();
+        if (Schema::hasColumn('products', 'is_cumulated')) {
+            $cumulatedProducts = Product::where('is_cumulated', true)
+                ->with(['stockMovements'])
+                ->get();
+        }
         
-        // Statistiques
         $reportStats = [
             'total_products' => count($productsData),
             'total_cumulated_products' => $cumulatedProducts->count(),
@@ -660,8 +716,12 @@ class ProductController extends Controller
         ));
     }
     
+    // ============================================
+    // MÉTHODES CORRIGÉES POUR LA GESTION DU STOCK
+    // ============================================
+    
     /**
-     * Méthode privée pour ajouter un mouvement de stock AVEC PRIX
+     * Méthode privée pour ajouter un mouvement de stock AVEC PRIX (CORRIGÉE)
      */
     private function addStockMovementWithPrice(Product $product, $type, $quantity, $purchase_price, $sale_price, $motif = null, $reference = null)
     {
@@ -688,8 +748,11 @@ class ProductController extends Controller
             'user_id' => auth()->id()
         ]);
         
-        // Mettre à jour le stock du produit
-        $product->update(['stock' => $newStock]);
+        // CORRECTION : Mettre à jour les DEUX champs de stock
+        $product->update([
+            'stock' => $newStock,
+            'quantity' => $newStock  // Synchroniser quantity avec stock
+        ]);
         
         return $movement;
     }
@@ -711,12 +774,14 @@ class ProductController extends Controller
     }
     
     /**
-     * Gestion manuelle du stock (ajustement)
+     * Gestion manuelle du stock (ajustement) - CORRIGÉE
      */
-    public function stockAdjustment(Request $request, Product $product)
+    public function adjustStock(Request $request, Product $product)
     {
-        // Vérifier si le produit a été cumulé
-        if ($product->has_been_cumulated && $product->cumulated_to) {
+        if (Schema::hasColumn('products', 'has_been_cumulated') && 
+            Schema::hasColumn('products', 'cumulated_to') && 
+            $product->has_been_cumulated && 
+            $product->cumulated_to) {
             return redirect()->route('products.show', $product)
                 ->with('warning', 'Ce produit a été cumulé et ne peut plus être modifié.');
         }
@@ -737,7 +802,6 @@ class ProductController extends Controller
                 $type = 'entree';
                 $motif = '';
                 
-                // Utiliser les prix fournis ou ceux du produit
                 $purchase_price = $request->filled('purchase_price') 
                     ? $request->purchase_price 
                     : $product->purchase_price;
@@ -771,7 +835,17 @@ class ProductController extends Controller
                             $motif = 'Ajustement (définition stock): ' . ($request->reason ?? '');
                             $quantity = abs($difference);
                         } else {
-                            // Pas de changement
+                            // Pas de changement mais mise à jour des prix si nécessaire
+                            if ($request->filled('purchase_price') || $request->filled('sale_price')) {
+                                $updateData = [];
+                                if ($request->filled('purchase_price')) {
+                                    $updateData['purchase_price'] = $purchase_price;
+                                }
+                                if ($request->filled('sale_price')) {
+                                    $updateData['sale_price'] = $sale_price;
+                                }
+                                $product->update($updateData);
+                            }
                             return;
                         }
                         break;
@@ -795,10 +869,15 @@ class ProductController extends Controller
                 if ($request->filled('sale_price')) {
                     $product->update(['sale_price' => $sale_price]);
                 }
+                
+                // Rafraîchir le produit
+                $product->refresh();
             });
             
+            $product->refresh();
+            
             return redirect()->route('products.index')
-                ->with('success', "Stock ajusté avec succès : {$product->refresh()->stock}");
+                ->with('success', "Stock ajusté avec succès. Stock actuel : {$product->stock}");
                 
         } catch (\Exception $e) {
             return redirect()->back()
@@ -808,12 +887,14 @@ class ProductController extends Controller
     }
     
     /**
-     * Réapprovisionnement AVEC GESTION DES PRIX
+     * Réapprovisionnement AVEC GESTION DES PRIX - CORRIGÉE
      */
     public function restock(Request $request, Product $product)
     {
-        // Vérifier si le produit a été cumulé
-        if ($product->has_been_cumulated && $product->cumulated_to) {
+        if (Schema::hasColumn('products', 'has_been_cumulated') && 
+            Schema::hasColumn('products', 'cumulated_to') && 
+            $product->has_been_cumulated && 
+            $product->cumulated_to) {
             return redirect()->route('products.show', $product)
                 ->with('warning', 'Ce produit a été cumulé et ne peut plus être réapprovisionné.');
         }
@@ -830,7 +911,6 @@ class ProductController extends Controller
         DB::transaction(function () use ($request, $product) {
             $oldStock = $product->stock;
             
-            // Utiliser les prix fournis ou ceux du produit
             $purchase_price = $request->filled('purchase_price') 
                 ? $request->purchase_price 
                 : $product->purchase_price;
@@ -850,8 +930,8 @@ class ProductController extends Controller
                 $request->reference_document
             );
             
-            // Mettre à jour la quantité totale
-            $product->increment('quantity', $request->amount);
+            // CORRECTION : Ne pas utiliser increment sur quantity
+            // La méthode addStockMovementWithPrice met déjà à jour stock et quantity
             
             // Mettre à jour les prix si fournis
             if ($request->filled('purchase_price')) {
@@ -865,19 +945,24 @@ class ProductController extends Controller
             if ($request->filled('supplier_id')) {
                 $product->update(['supplier_id' => $request->supplier_id]);
             }
+            
+            // Rafraîchir le produit
+            $product->refresh();
         });
         
         return redirect()->route('products.index')
-            ->with('success', "Réapprovisionnement réussi : +{$request->amount} unités");
+            ->with('success', "Réapprovisionnement réussi : +{$request->amount} unités. Stock actuel : {$product->stock}");
     }
     
     /**
-     * Vente rapide
+     * Vente rapide - CORRIGÉE
      */
     public function quickSale(Request $request, Product $product)
     {
-        // Vérifier si le produit a été cumulé
-        if ($product->has_been_cumulated && $product->cumulated_to) {
+        if (Schema::hasColumn('products', 'has_been_cumulated') && 
+            Schema::hasColumn('products', 'cumulated_to') && 
+            $product->has_been_cumulated && 
+            $product->cumulated_to) {
             $cumulatedProduct = Product::find($product->cumulated_to);
             if ($cumulatedProduct) {
                 return redirect()->route('products.show', $cumulatedProduct)
@@ -892,8 +977,6 @@ class ProductController extends Controller
         ]);
         
         DB::transaction(function () use ($request, $product) {
-            $oldStock = $product->stock;
-            
             // Ajouter le mouvement de sortie
             $this->addStockMovement(
                 $product,
@@ -902,10 +985,13 @@ class ProductController extends Controller
                 'Vente à ' . ($request->client_name ?? 'Client'),
                 $request->reference
             );
+            
+            // Rafraîchir le produit
+            $product->refresh();
         });
         
         return redirect()->route('products.history', $product)
-            ->with('success', "Vente enregistrée : -{$request->quantity} unités");
+            ->with('success', "Vente enregistrée : -{$request->quantity} unités. Stock actuel : {$product->stock}");
     }
     
     /**
@@ -913,38 +999,42 @@ class ProductController extends Controller
      */
     public function uncumulateProduct(Product $product)
     {
-        // Vérifier si c'est un produit cumulé
-        if (!$product->is_cumulated) {
+        if (!Schema::hasColumn('products', 'is_cumulated') || !$product->is_cumulated) {
             return redirect()->back()
                 ->with('error', 'Ce produit n\'est pas un produit cumulé.');
         }
         
         DB::beginTransaction();
         try {
-            // Trouver les produits originaux
-            $originalProducts = Product::where('cumulated_to', $product->id)
-                ->orWhere('parent_id', $product->id)
-                ->get();
+            $originalProducts = collect();
+            
+            if (Schema::hasColumn('products', 'cumulated_to')) {
+                $originalProducts = Product::where('cumulated_to', $product->id)->get();
+            }
+            
+            if ($originalProducts->isEmpty() && Schema::hasColumn('products', 'parent_id')) {
+                $originalProducts = Product::where('parent_id', $product->id)->get();
+            }
             
             if ($originalProducts->isEmpty()) {
                 return redirect()->back()
                     ->with('error', 'Aucun produit original trouvé pour ce cumul.');
             }
             
-            // Restaurer chaque produit original
             foreach ($originalProducts as $original) {
-                // Calculer combien de stock restituer (proportionnel)
-                // Pour simplifier, on restitue le stock d'origine
                 $originalStock = $original->getOriginal('stock') ?? 0;
                 
-                // Mettre à jour le produit original
-                $original->update([
-                    'stock' => $originalStock,
-                    'has_been_cumulated' => false,
-                    'cumulated_to' => null,
-                ]);
+                $updateData = ['stock' => $originalStock];
                 
-                // Créer un mouvement de stock pour la restitution
+                if (Schema::hasColumn('products', 'has_been_cumulated')) {
+                    $updateData['has_been_cumulated'] = false;
+                }
+                if (Schema::hasColumn('products', 'cumulated_to')) {
+                    $updateData['cumulated_to'] = null;
+                }
+                
+                $original->update($updateData);
+                
                 $this->addStockMovementWithPrice(
                     $original,
                     'entree',
@@ -956,7 +1046,6 @@ class ProductController extends Controller
                 );
             }
             
-            // Supprimer le produit cumulé
             $product->delete();
             
             DB::commit();
@@ -986,23 +1075,35 @@ class ProductController extends Controller
         
         DB::beginTransaction();
         try {
-            $products = Product::whereIn('id', $request->product_ids)
-                ->where('has_been_cumulated', false)
-                ->get();
+            $query = Product::whereIn('id', $request->product_ids);
             
-            if ($products->count() < 2) {
-                return redirect()->back()
-                    ->with('error', 'Sélectionnez au moins 2 produits non-cumulés à fusionner.');
+            if (Schema::hasColumn('products', 'has_been_cumulated')) {
+                $query->where('has_been_cumulated', false);
             }
             
-            // Calculer les totaux
+            $products = $query->get();
+            
+            if ($products->count() < 2) {
+                $alreadyMerged = [];
+                foreach ($products as $product) {
+                    if (Schema::hasColumn('products', 'has_been_cumulated') && $product->has_been_cumulated) {
+                        $alreadyMerged[] = $product->name;
+                    }
+                }
+                
+                if (!empty($alreadyMerged)) {
+                    throw new \Exception("Certains produits ont déjà été fusionnés: " . implode(', ', $alreadyMerged));
+                }
+                
+                throw new \Exception('Sélectionnez au moins 2 produits non-cumulés à fusionner.');
+            }
+            
             $totalStock = $products->sum('stock');
             $avgPurchasePrice = $products->avg('purchase_price');
             $avgSalePrice = $products->avg('sale_price');
             $totalQuantity = $products->sum('quantity');
             
-            // Créer le produit cumulé
-            $cumulatedProduct = Product::create([
+            $cumulatedData = [
                 'name' => $request->name,
                 'stock' => $totalStock,
                 'quantity' => $totalQuantity,
@@ -1011,13 +1112,16 @@ class ProductController extends Controller
                 'description' => 'Produit fusionné de ' . $products->count() . ' produits',
                 'category_id' => $request->category_id,
                 'supplier_id' => $request->supplier_id,
-                'is_cumulated' => true,
-                'batch_number' => 'MERGE-' . time() . '-' . Str::random(4),
-            ]);
+                'batch_number' => $request->input('batch_reference', 'MERGE-' . time() . '-' . Str::random(4)),
+            ];
             
-            // Traiter chaque produit
+            if (Schema::hasColumn('products', 'is_cumulated')) {
+                $cumulatedData['is_cumulated'] = true;
+            }
+            
+            $cumulatedProduct = Product::create($cumulatedData);
+            
             foreach ($products as $product) {
-                // Transférer le stock
                 if ($product->stock > 0) {
                     $this->addStockMovementWithPrice(
                         $product,
@@ -1040,12 +1144,17 @@ class ProductController extends Controller
                     );
                 }
                 
-                // Marquer comme cumulé
-                $product->update([
-                    'has_been_cumulated' => true,
-                    'cumulated_to' => $cumulatedProduct->id,
-                    'stock' => 0,
-                ]);
+                $updateData = ['stock' => 0, 'quantity' => 0];
+                
+                if (Schema::hasColumn('products', 'has_been_cumulated')) {
+                    $updateData['has_been_cumulated'] = true;
+                }
+                
+                if (Schema::hasColumn('products', 'cumulated_to')) {
+                    $updateData['cumulated_to'] = $cumulatedProduct->id;
+                }
+                
+                $product->update($updateData);
             }
             
             DB::commit();
@@ -1059,5 +1168,66 @@ class ProductController extends Controller
                 ->with('error', 'Erreur lors de la fusion: ' . $e->getMessage())
                 ->withInput();
         }
+    }
+    
+    /**
+     * Vérifier la cohérence du stock - NOUVELLE MÉTHODE
+     */
+    public function checkStockConsistency(Product $product)
+    {
+        $totalEntrees = $product->stockMovements()
+            ->where('type', 'entree')
+            ->sum('quantity');
+        
+        $totalSorties = $product->stockMovements()
+            ->where('type', 'sortie')
+            ->sum('quantity');
+        
+        $calculatedStock = $totalEntrees - $totalSorties;
+        $actualStock = $product->stock;
+        
+        return [
+            'calculated' => $calculatedStock,
+            'actual' => $actualStock,
+            'difference' => $actualStock - $calculatedStock,
+            'is_consistent' => $actualStock == $calculatedStock
+        ];
+    }
+    
+    /**
+     * Synchroniser le stock avec les mouvements - NOUVELLE MÉTHODE
+     */
+    public function syncStock(Product $product)
+    {
+        $consistency = $this->checkStockConsistency($product);
+        
+        if ($consistency['is_consistent']) {
+            return redirect()->route('products.show', $product)
+                ->with('info', 'Le stock est déjà cohérent.');
+        }
+        
+        DB::transaction(function () use ($product, $consistency) {
+            $oldStock = $product->stock;
+            $newStock = $consistency['calculated'];
+            
+            $difference = $newStock - $oldStock;
+            
+            if ($difference != 0) {
+                $type = $difference > 0 ? 'entree' : 'sortie';
+                
+                $this->addStockMovementWithPrice(
+                    $product,
+                    $type,
+                    abs($difference),
+                    $product->purchase_price,
+                    $product->sale_price,
+                    'Correction automatique de stock',
+                    'SYNC-' . $product->id
+                );
+            }
+        });
+        
+        return redirect()->route('products.show', $product)
+            ->with('success', "Stock synchronisé : {$consistency['difference']} unités corrigées. Nouveau stock : {$product->refresh()->stock}");
     }
 }

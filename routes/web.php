@@ -207,7 +207,7 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('products')->group(functi
     
     // Gestion du stock (admin)
     Route::post('/{product}/restock', [ProductController::class, 'restock'])->name('products.restock');
-    Route::post('/{product}/stock-adjustment', [ProductController::class, 'stockAdjustment'])->name('products.stock-adjustment');
+    Route::post('/{product}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjust-stock');
     Route::post('/{product}/quick-sale', [ProductController::class, 'quickSale'])->name('products.quick-sale.admin');
     
     // Historique (admin)
@@ -218,7 +218,7 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('products')->group(functi
     Route::get('/{product}/history/export', [ProductController::class, 'exportHistory'])->name('products.history.export');
     Route::get('/global-history/export', [ProductController::class, 'exportGlobalHistory'])->name('products.global-history.export');
     
-    // ✅ NOUVELLES ROUTES : Gestion des cumuls et fusion (admin uniquement)
+    // Gestion des cumuls et fusion (admin uniquement)
     Route::post('/merge', [ProductController::class, 'mergeProducts'])->name('products.merge');
     Route::post('/{product}/uncumulate', [ProductController::class, 'uncumulateProduct'])->name('products.uncumulate');
 });
@@ -311,7 +311,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{product}/history', [ProductController::class, 'history'])->name('products.history');
         Route::get('/products/global-history', [ProductController::class, 'globalHistory'])->name('products.global-history');
         
-        // Actions rapides
+        // Actions rapides (pour tous les utilisateurs authentifiés)
         Route::post('/{product}/quick-sale', [ProductController::class, 'quickSale'])->name('products.quick-sale');
     });
 
@@ -332,10 +332,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/products', [ProductController::class, 'productsReport'])->name('reports.products');
         Route::get('/inventory', [ProductController::class, 'inventoryReport'])->name('reports.inventory');
         
-        // NOUVEAU : Rapport des stocks groupés - UNE SEULE ROUTE
+        // Rapport des stocks groupés
         Route::get('/grouped-stocks', [ProductController::class, 'groupedStocksReport'])->name('reports.grouped-stocks');
         
-        // Export des stocks groupés - DANS LA MÊME SECTION
+        // Export des stocks groupés
         Route::get('/grouped-stocks/export/{format?}', [ProductController::class, 'exportGroupedStocks'])
             ->name('reports.grouped-stocks.export');
     });
@@ -351,7 +351,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/grouped-stocks-stats', [ProductController::class, 'getQuickStats'])
             ->name('api.grouped-stocks.stats');
             
-        // ✅ AJOUTEZ CES ROUTES POUR LE MODAL DE FUSION
+        // Routes pour le modal de fusion
         Route::get('/modal/categories', function () {
             try {
                 $categories = \App\Models\Category::orderBy('name', 'asc')->get(['id', 'name']);

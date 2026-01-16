@@ -38,7 +38,9 @@
                         <div class="flex justify-between items-center">
                             <div>
                                 <div class="text-sm text-blue-800 dark:text-blue-300">Stock disponible</div>
-                                <div class="text-2xl font-bold text-blue-900 dark:text-blue-100">{{ $product->stock ?? 0 }}</div>
+                                <div class="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                                    {{ number_format($product->stock, 0) }}
+                                </div>
                                 <div class="text-xs text-blue-600 dark:text-blue-400 mt-1">unités</div>
                             </div>
                             <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
@@ -47,7 +49,7 @@
                         </div>
                         <div class="mt-3">
                             @php 
-                                $stock = $product->stock ?? 0;
+                                $stock = $product->stock;
                                 $stockStatus = $stock > 10 ? 'excellent' : ($stock > 0 ? 'attention' : 'critique');
                                 $statusClasses = [
                                     'excellent' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
@@ -68,7 +70,7 @@
                             <div>
                                 <div class="text-sm text-green-800 dark:text-green-300">Prix de vente</div>
                                 <div class="text-2xl font-bold text-green-900 dark:text-green-100">
-                                    {{ number_format($product->sale_price ?? 0, 0, ',', ' ') }}
+                                    {{ number_format($product->sale_price, 0, ',', ' ') }}
                                 </div>
                                 <div class="text-xs text-green-600 dark:text-green-400 mt-1">CFA/unité</div>
                             </div>
@@ -78,9 +80,9 @@
                         </div>
                         @if(Auth::user() && Auth::user()->role === 'admin')
                             <div class="mt-3">
-                                <div class="text-xs text-gray-600 dark:text-gray-400">Prix d'achat moyen</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400">Prix d'achat actuel</div>
                                 <div class="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                    {{ number_format(isset($stockSummary['average_purchase_price']) ? $stockSummary['average_purchase_price'] : $product->purchase_price, 0, ',', ' ') }} CFA
+                                    {{ number_format($product->purchase_price, 0, ',', ' ') }} CFA
                                 </div>
                             </div>
                         @endif
@@ -92,10 +94,7 @@
                             <div>
                                 <div class="text-sm text-purple-800 dark:text-purple-300">Valeur totale</div>
                                 <div class="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                                    @php
-                                        $totalValue = isset($stockSummary['total_value']) ? $stockSummary['total_value'] : ($product->stock * $product->sale_price);
-                                    @endphp
-                                    {{ number_format($totalValue, 0, ',', ' ') }}
+                                    {{ number_format($product->stock * $product->sale_price, 0, ',', ' ') }}
                                 </div>
                                 <div class="text-xs text-purple-600 dark:text-purple-400 mt-1">CFA</div>
                             </div>
@@ -103,11 +102,11 @@
                                 <i class="fas fa-money-bill-wave text-purple-600 dark:text-purple-300"></i>
                             </div>
                         </div>
-                        @if(Auth::user() && Auth::user()->role === 'admin' && isset($stockSummary['profit_potential']))
+                        @if($product->purchase_price > 0)
                             <div class="mt-3">
                                 <div class="text-xs text-gray-600 dark:text-gray-400">Bénéfice potentiel</div>
                                 <div class="text-sm font-medium text-green-600 dark:text-green-400">
-                                    +{{ number_format($stockSummary['profit_potential'], 0, ',', ' ') }} CFA
+                                    +{{ number_format($product->stock * ($product->sale_price - $product->purchase_price), 0, ',', ' ') }} CFA
                                 </div>
                             </div>
                         @endif
@@ -133,13 +132,15 @@
                                 <i class="fas fa-layer-group text-indigo-600 dark:text-indigo-300"></i>
                             </div>
                         </div>
-                        <div class="mt-3">
-                            <a href="{{ route('reports.grouped-stocks') }}?search={{ urlencode($product->name) }}" 
-                               class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline">
-                                <i class="fas fa-arrow-right mr-1"></i>
-                                Voir le détail des lots
-                            </a>
-                        </div>
+                        @if(isset($stockSummary['has_multiple_batches']) && $stockSummary['has_multiple_batches'])
+                            <div class="mt-3">
+                                <a href="{{ route('reports.grouped-stocks') }}?search={{ urlencode($product->name) }}" 
+                                   class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline">
+                                    <i class="fas fa-arrow-right mr-1"></i>
+                                    Voir le détail des lots
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -178,14 +179,14 @@
                                             <div>
                                                 <div class="text-sm text-gray-500 dark:text-gray-400">Prix d'achat actuel</div>
                                                 <div class="font-semibold text-gray-900 dark:text-white">
-                                                    {{ number_format($product->purchase_price ?? 0, 0, ',', ' ') }} CFA
+                                                    {{ number_format($product->purchase_price, 0, ',', ' ') }} CFA
                                                 </div>
                                             </div>
                                         @endif
                                         <div>
                                             <div class="text-sm text-gray-500 dark:text-gray-400">Prix de vente</div>
                                             <div class="font-semibold text-green-600 dark:text-green-400">
-                                                {{ number_format($product->sale_price ?? 0, 0, ',', ' ') }} CFA
+                                                {{ number_format($product->sale_price, 0, ',', ' ') }} CFA
                                             </div>
                                         </div>
                                         @if($product->purchase_price > 0)
@@ -266,7 +267,7 @@
                                                                 </div>
                                                                 @if(isset($batch->last_update) && $batch->last_update)
                                                                     <div class="text-xs text-gray-500 dark:text-gray-400 ml-4">
-                                                                        {{ $batch->last_update->format('d/m/Y') }}
+                                                                        {{ \Carbon\Carbon::parse($batch->last_update)->format('d/m/Y') }}
                                                                     </div>
                                                                 @endif
                                                             </td>
@@ -408,13 +409,6 @@
                                                 class="w-full inline-flex justify-center items-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition">
                                             <i class="fas fa-sliders-h mr-2"></i>
                                             <span>Ajuster le stock</span>
-                                        </button>
-
-                                        <!-- Quick Sale -->
-                                        <button onclick="openQuickSaleModal()" 
-                                                class="w-full inline-flex justify-center items-center px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-md transition">
-                                            <i class="fas fa-shopping-cart mr-2"></i>
-                                            <span>Vente rapide</span>
                                         </button>
 
                                         <!-- Edit Product -->
@@ -625,20 +619,58 @@
     </div>
 </div>
 
+<!-- Modals -->
+@include('products.partials.modals')
+
 <!-- FontAwesome CSS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 <script>
+// Gestion des modaux
 function openRestockModal() {
-    alert('Fonctionnalité de réapprovisionnement à implémenter');
+    document.getElementById('restockModal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeRestockModal() {
+    document.getElementById('restockModal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
 }
 
 function openAdjustmentModal() {
-    alert('Fonctionnalité d\'ajustement de stock à implémenter');
+    document.getElementById('adjustmentModal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
 }
 
-function openQuickSaleModal() {
-    alert('Fonctionnalité de vente rapide à implémenter');
+function closeAdjustmentModal() {
+    document.getElementById('adjustmentModal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
 }
+
+// Fermer les modaux avec la touche Échap
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeRestockModal();
+        closeAdjustmentModal();
+    }
+});
+
+// Fermer les modaux en cliquant à l'extérieur
+document.addEventListener('DOMContentLoaded', function() {
+    const modals = ['restockModal', 'adjustmentModal'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    const closeFunctionName = 'close' + modalId.charAt(0).toUpperCase() + modalId.slice(1).replace('Modal', '') + 'Modal';
+                    if (typeof window[closeFunctionName] === 'function') {
+                        window[closeFunctionName]();
+                    }
+                }
+            });
+        }
+    });
+});
 </script>
 @endsection

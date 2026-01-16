@@ -434,22 +434,36 @@
                             <tr class="hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent transition-all duration-200 group
                                 @if($hasBeenCumulated) opacity-75 hover:opacity-100 @endif">
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full 
-                                        @if($isCumulated) bg-purple-100 text-purple-700 @elseif($hasBeenCumulated) bg-pink-100 text-pink-700 @else bg-gray-100 text-gray-700 @endif
-                                        font-semibold text-sm group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
-                                        {{ $product->id ?? 'N/A' }}
-                                        @if($hasBeenCumulated)
+                                    @if($isCumulated)
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-semibold text-sm group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
+                                            {{ $product->id ?? 'N/A' }}
+                                        </span>
+                                    @elseif($hasBeenCumulated)
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-pink-700 font-semibold text-sm group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
+                                            {{ $product->id ?? 'N/A' }}
                                             <i class="bi bi-arrow-right-short ml-0.5 text-xs"></i>
-                                        @endif
-                                    </span>
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-semibold text-sm group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
+                                            {{ $product->id ?? 'N/A' }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-lg 
-                                            @if($isCumulated) bg-gradient-to-br from-purple-400 to-pink-600 @elseif($hasBeenCumulated) bg-gradient-to-br from-pink-400 to-rose-600 @else bg-gradient-to-br from-blue-400 to-blue-600 @endif
-                                            flex items-center justify-center text-white font-bold shadow-md">
-                                            {{ substr($product->name ?? 'N', 0, 1) }}
-                                        </div>
+                                        @if($isCumulated)
+                                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-400 to-pink-600 flex items-center justify-center text-white font-bold shadow-md">
+                                                {{ substr($product->name ?? 'N', 0, 1) }}
+                                            </div>
+                                        @elseif($hasBeenCumulated)
+                                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-400 to-rose-600 flex items-center justify-center text-white font-bold shadow-md">
+                                                {{ substr($product->name ?? 'N', 0, 1) }}
+                                            </div>
+                                        @else
+                                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-md">
+                                                {{ substr($product->name ?? 'N', 0, 1) }}
+                                            </div>
+                                        @endif
                                         <div>
                                             <p class="font-semibold text-gray-800 flex items-center gap-2">
                                                 {{ $product->name ?? 'N/A' }}
