@@ -6,6 +6,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Product;
 use App\Models\Client;
+use App\Models\StockMovement; // AJOUTEZ CE USE
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -62,6 +63,7 @@ class SaleController extends Controller
         DB::transaction(function () use ($validated) {
             \Log::info('Transaction DB démarrée');
             
+            // Créer la vente
             $sale = Sale::create([
                 'client_id' => $validated['client_id'],
                 'user_id' => Auth::id(),
@@ -70,11 +72,19 @@ class SaleController extends Controller
             
             \Log::info("Vente créée - ID: {$sale->id}");
             
+            // Récupérer le client pour le motif
+            $clientName = 'Client';
+            if ($validated['client_id']) {
+                $client = Client::find($validated['client_id']);
+                $clientName = $client ? $client->name : 'Client';
+            }
+            
             $grandTotal = 0;
             
             foreach ($validated['products'] as $index => $productData) {
                 \Log::info("Produit #{$index}:", $productData);
                 
+                // Récupérer le produit avec verrou
                 $product = Product::lockForUpdate()->find($productData['product_id']);
                 
                 if (!$product) {
@@ -88,11 +98,30 @@ class SaleController extends Controller
                 $quantityToSell = $productData['quantity'];
                 $unitPrice = $productData['unit_price'];
                 
+                // Vérifier le stock
                 if ($product->stock < $quantityToSell) {
                     $message = "Stock insuffisant pour '{$product->name}'. Stock: {$product->stock}, Demandé: {$quantityToSell}";
                     \Log::error($message);
                     throw new \Exception($message);
                 }
+                
+                // Calculer le stock après vente
+                $stockAfter = $product->stock - $quantityToSell;
+                
+                // ============================================
+                // ENREGISTRER LE MOUVEMENT DE STOCK - AJOUTÉ
+                // ============================================
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'type' => 'sortie',
+                    'quantity' => $quantityToSell,
+                    'stock_after' => $stockAfter,
+                    'motif' => "Vente #{$sale->id} à {$clientName}",
+                    'reference_document' => 'VTE-' . $sale->id,
+                    'user_id' => Auth::id(),
+                ]);
+                
+                \Log::info("Mouvement de stock enregistré pour produit ID: {$product->id}");
                 
                 // Créer l'item de vente
                 SaleItem::create([
@@ -117,6 +146,7 @@ class SaleController extends Controller
                 $grandTotal += ($unitPrice * $quantityToSell);
             }
             
+            // Mettre à jour le total de la vente
             $sale->update(['total_price' => $grandTotal]);
             \Log::info("Total vente: {$grandTotal} CFA");
         });
@@ -153,15 +183,31 @@ class SaleController extends Controller
         }
 
         DB::transaction(function () use ($sale) {
+            // Récupérer le client pour le motif
+            $clientName = $sale->client ? $sale->client->name : 'Client';
+            
             // RÉTABLIR le STOCK pour chaque produit vendu
             foreach ($sale->items as $item) {
                 $product = Product::lockForUpdate()->find($item->product_id);
                 if ($product) {
+                    // Calculer le nouveau stock après annulation
+                    $stockAfter = $product->stock + $item->quantity;
+                    
+                    // ============================================
+                    // ENREGISTRER LE MOUVEMENT D'ANNULATION - AJOUTÉ
+                    // ============================================
+                    StockMovement::create([
+                        'product_id' => $product->id,
+                        'type' => 'entree', // C'est une entrée car on remet le stock
+                        'quantity' => $item->quantity,
+                        'stock_after' => $stockAfter,
+                        'motif' => "Annulation vente #{$sale->id} à {$clientName}",
+                        'reference_document' => 'ANNUL-VTE-' . $sale->id,
+                        'user_id' => Auth::id(),
+                    ]);
+                    
                     // REMETTRE dans le STOCK la quantité qui avait été vendue
                     $product->increment('stock', $item->quantity);
-                    
-                    // OPTIONNEL: Diminuer le total vendu
-                    // $product->decrement('quantity_sold', $item->quantity);
                 }
             }
 
@@ -232,5 +278,34 @@ class SaleController extends Controller
                        ->paginate(10);
         
         return view('sales.index', compact('sales', 'period'));
+    }
+    
+    // ----------------------
+    // Méthode pour mettre à jour une vente (si vous en avez besoin)
+    // ----------------------
+    public function update(Request $request, $id)
+    {
+        $sale = Sale::findOrFail($id);
+        
+        $validated = $request->validate([
+            // ... vos règles de validation ...
+        ]);
+        
+        DB::transaction(function () use ($sale, $validated) {
+            // Logique pour mettre à jour une vente existante
+            // Pensez à enregistrer aussi les mouvements de stock pour les ajustements
+            
+            // Exemple simple :
+            foreach ($sale->items as $oldItem) {
+                // Pour chaque item modifié, enregistrez un mouvement d'ajustement
+                // ...
+            }
+            
+            // Mettre à jour la vente
+            $sale->update($validated);
+        });
+        
+        return redirect()->route('sales.show', $sale->id)
+            ->with('success', 'Vente mise à jour avec succès.');
     }
 }

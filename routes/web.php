@@ -32,12 +32,10 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
                 $date = Carbon::now()->subDays($i);
                 $dates[] = $date->format('d/m');
                 
-                // Vérifier si le modèle Sale existe
                 if (class_exists(Sale::class)) {
                     $total = Sale::whereDate('created_at', $date->format('Y-m-d'))->sum('total_price');
                     $totals[] = (int) $total;
                 } else {
-                    // Données de test si le modèle n'existe pas
                     $totals[] = rand(100000, 500000);
                 }
             }
@@ -48,7 +46,6 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
             ]);
             
         } catch (\Exception $e) {
-            // Données de secours en cas d'erreur
             $dates = [];
             $totals = [];
             $period = (int) ($request->query('period') ?? 7);
@@ -71,7 +68,6 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
         try {
             $today = Carbon::today();
             
-            // Vérifier si les modèles existent
             $salesToday = class_exists(Sale::class) 
                 ? Sale::whereDate('created_at', $today)->count() 
                 : rand(5, 50);
@@ -99,7 +95,6 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
             ]);
             
         } catch (\Exception $e) {
-            // Données de secours
             return response()->json([
                 'salesToday' => rand(5, 50),
                 'totalRevenue' => rand(500000, 2000000),
@@ -130,7 +125,6 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
                     })->toArray();
             }
             
-            // Si pas de données ou erreur, retourner des données de test
             if (empty($recentSales)) {
                 $productNames = ['Marteau', 'Clou 3"', 'Vis à bois', 'Scie circulaire', 'Perceuse'];
                 $clientNames = ['Jean Dupont', 'Marie Martin', 'Pierre Durand', 'Sophie Lambert'];
@@ -170,7 +164,6 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
                     })->toArray();
             }
 
-            // Données de test si pas de produits
             if (empty($lowStockProducts)) {
                 $productNames = ['Clou 2"', 'Vis à métal', 'Ampoule LED', 'Interrupteur'];
                 for ($i = 0; $i < 3; $i++) {
@@ -192,12 +185,12 @@ Route::middleware(['auth'])->prefix('ajax')->group(function () {
 });
 
 // ======================
-// Routes ADMIN uniquement (doivent être DÉFINIES EN PREMIER)
+// Routes ADMIN uniquement
 // ======================
 
 // 1. CATÉGORIES - CRUD admin
 Route::middleware(['auth', 'adminmiddleware'])->prefix('categories')->group(function () {
-    Route::get('/create', [CategoryController::class, 'create'])->name('categories.create'); // ✅ CORRECT: pas de paramètre
+    Route::get('/create', [CategoryController::class, 'create'])->name('categories.create');
     Route::post('/', [CategoryController::class, 'store'])->name('categories.store');
     Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
     Route::put('/{category}', [CategoryController::class, 'update'])->name('categories.update');
@@ -211,11 +204,26 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('products')->group(functi
     Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
     Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
-    Route::get('/{product}/stock', [ProductController::class, 'stock'])->name('products.stock');
-    Route::post('/{product}/stock', [ProductController::class, 'updateStock'])->name('products.stock.update');
+    
+    // Gestion du stock (admin)
+    Route::post('/{product}/restock', [ProductController::class, 'restock'])->name('products.restock');
+    Route::post('/{product}/adjust-stock', [ProductController::class, 'adjustStock'])->name('products.adjust-stock');
+    Route::post('/{product}/quick-sale', [ProductController::class, 'quickSale'])->name('products.quick-sale.admin');
+    
+    // Historique (admin)
+    Route::get('/{product}/history', [ProductController::class, 'history'])->name('products.history.admin');
+    Route::get('/products/global-history', [ProductController::class, 'globalHistory'])->name('products.global-history.admin');
+    
+    // Export (admin)
+    Route::get('/{product}/history/export', [ProductController::class, 'exportHistory'])->name('products.history.export');
+    Route::get('/global-history/export', [ProductController::class, 'exportGlobalHistory'])->name('products.global-history.export');
+    
+    // Gestion des cumuls et fusion (admin uniquement)
+    Route::post('/merge', [ProductController::class, 'mergeProducts'])->name('products.merge');
+    Route::post('/{product}/uncumulate', [ProductController::class, 'uncumulateProduct'])->name('products.uncumulate');
 });
 
-// 3. FOURNISSEURS - CRUD admin (si nécessaire)
+// 3. FOURNISSEURS - CRUD admin
 Route::middleware(['auth', 'adminmiddleware'])->prefix('suppliers')->group(function () {
     Route::get('/create', [SupplierController::class, 'create'])->name('suppliers.create');
     Route::post('/', [SupplierController::class, 'store'])->name('suppliers.store');
@@ -232,7 +240,6 @@ Route::middleware(['auth', 'adminmiddleware'])->prefix('admin')->group(function 
         return view('admin.dashboard');
     })->name('admin.dashboard');
 
-    // Gestion des utilisateurs
     Route::prefix('users')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('users.index');
         Route::get('/create', [UserController::class, 'create'])->name('users.create');
@@ -299,6 +306,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/category/{category}', [ProductController::class, 'byCategory'])->name('products.byCategory');
         Route::get('/search', [ProductController::class, 'search'])->name('products.search');
         Route::get('/{product}', [ProductController::class, 'show'])->whereNumber('product')->name('products.show');
+        
+        // Historique et mouvements (lecture pour tous)
+        Route::get('/{product}/history', [ProductController::class, 'history'])->name('products.history');
+        Route::get('/products/global-history', [ProductController::class, 'globalHistory'])->name('products.global-history');
+        
+        // Actions rapides (pour tous les utilisateurs authentifiés)
+        Route::post('/{product}/quick-sale', [ProductController::class, 'quickSale'])->name('products.quick-sale');
     });
 
     // ----------------------
@@ -307,17 +321,23 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('categories')->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('categories.index');
         Route::get('/{category}', [CategoryController::class, 'show'])->name('categories.show');
-        // ⚠️ IMPORTANT: PAS de route /{category} pour create() ici
     });
 
     // -----------------------
-    // RAPPORTS ET STATISTIQUES
+    // RAPPORTS ET STATISTIQUES - TOUTE LA SECTION UNIFIÉE
     // ----------------------
     Route::prefix('reports')->group(function () {
         Route::get('/sales', [SaleController::class, 'salesReport'])->name('reports.sales');
         Route::get('/clients', [ClientController::class, 'clientsReport'])->name('reports.clients');
         Route::get('/products', [ProductController::class, 'productsReport'])->name('reports.products');
         Route::get('/inventory', [ProductController::class, 'inventoryReport'])->name('reports.inventory');
+        
+        // Rapport des stocks groupés
+        Route::get('/grouped-stocks', [ProductController::class, 'groupedStocksReport'])->name('reports.grouped-stocks');
+        
+        // Export des stocks groupés
+        Route::get('/grouped-stocks/export/{format?}', [ProductController::class, 'exportGroupedStocks'])
+            ->name('reports.grouped-stocks.export');
     });
 
     // ----------------------
@@ -327,6 +347,42 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard-stats', [SaleController::class, 'dashboardStats'])->name('api.dashboard.stats');
         Route::get('/recent-sales', [SaleController::class, 'recentSales'])->name('api.recent.sales');
         Route::get('/top-products', [ProductController::class, 'topProducts'])->name('api.top.products');
+        
+        Route::get('/grouped-stocks-stats', [ProductController::class, 'getQuickStats'])
+            ->name('api.grouped-stocks.stats');
+            
+        // Routes pour le modal de fusion
+        Route::get('/modal/categories', function () {
+            try {
+                $categories = \App\Models\Category::orderBy('name', 'asc')->get(['id', 'name']);
+                return response()->json([
+                    'success' => true,
+                    'data' => $categories
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'data' => []
+                ], 500);
+            }
+        })->name('api.modal.categories');
+        
+        Route::get('/modal/suppliers', function () {
+            try {
+                $suppliers = \App\Models\Supplier::orderBy('name', 'asc')->get(['id', 'name']);
+                return response()->json([
+                    'success' => true,
+                    'data' => $suppliers
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'data' => []
+                ], 500);
+            }
+        })->name('api.modal.suppliers');
     });
     
     // ----------------------
