@@ -104,6 +104,17 @@ new class extends Component
                             <span class="text-gray-300 group-hover:text-white transition-colors">Clients</span>
                         </div>
                     </x-nav-link>
+
+                    <!-- HISTORIQUE - AJOUTÉ -->
+                    <x-nav-link :href="route('products.global-history')" :active="request()->routeIs('products.global-history')" wire:navigate 
+                        class="px-4 py-2.5 rounded-lg hover:bg-white/10 transition-all duration-200 group">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-300 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="text-gray-300 group-hover:text-white transition-colors">Historique</span>
+                        </div>
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -218,6 +229,15 @@ new class extends Component
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0c-.281.015-.559.03-.835.046m-11.665 0c-.276-.016-.554-.031-.835-.046m11.665 0a23.848 23.848 0 01-11.665 0" />
                 </svg>
                 Clients
+            </x-responsive-nav-link>
+
+            <!-- HISTORIQUE - AJOUTÉ (version mobile) -->
+            <x-responsive-nav-link :href="route('products.global-history')" :active="request()->routeIs('products.global-history')" wire:navigate 
+                class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Historique
             </x-responsive-nav-link>
         </div>
 
